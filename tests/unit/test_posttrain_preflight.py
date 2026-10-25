@@ -176,6 +176,95 @@ def test_diagnostic_mode_reports_changed_source_without_weakening_run_lock(
     assert path.read_bytes() == before and list(tmp_path.iterdir()) == [path]
 
 
+def _profile_plan(tmp_path, dtype, attention):
+    """Lock a numerical-profile fixture without loading its initially requested model."""
+    raw = planning.load_spec(SMOKE).model_dump(mode="json")
+    raw["inference"].update(dtype=dtype, attention=attention)
+    # JSON is a YAML subset; preserve absolute fixture-data paths from load_spec.
+    config = tmp_path / "profile.yaml"
+    config.write_text(json.dumps(raw), encoding="utf-8")
+    path = tmp_path / "profile-plan.json"
+    return path, planning.lock_study(config, path)
+
+
+@pytest.mark.parametrize(("dtype", "attention", "arguments", "changed"), [
+    ("bfloat16", "eager", ["--diagnostic-dtype", "float32"], True),
+    ("float32", "sdpa", ["--diagnostic-attention", "eager"], True),
+    ("bfloat16", "sdpa", ["--diagnostic-dtype", "float32", "--diagnostic-attention", "eager"], True),
+    ("float32", "eager", ["--diagnostic-dtype", "float32"], False),
+])
+def test_explicit_diagnostic_profile_uses_real_fixture_without_rewriting_plan(
+    bundle, tmp_path, capsys, dtype, attention, arguments, changed,
+):
+    """Run actual CPU parity/replay under the selected control, retaining archived science."""
+    path, plan = _profile_plan(tmp_path, dtype, attention)
+    before = {file.name: file.read_bytes() for file in tmp_path.iterdir()}
+    assert main([
+        "posttrain", "preflight", str(path), "--checkpoint", "base", "--device", "cpu",
+        "--diagnostic", *arguments,
+    ]) == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["planned_inference"] == plan.spec.inference.model_dump(mode="json")
+    assert report["effective_inference"] == {
+        "dtype": "float32", "attention": "eager", "max_context_tokens": 256,
+    }
+    assert report["model_profile"]["dtype"] == "torch.float32"
+    assert report["model_profile"]["attention"] == "eager"
+    assert report["diagnostic_only"] and report["diagnostic_profile_changed"] is changed
+    assert report["cache_logits_close"] and report["seeded_tokens_equal"]
+    assert report["atol"] == report["rtol"] == 1e-4
+    assert report["study_id"] == plan.study_id
+    assert planning.read_plan(path) == plan
+    assert {file.name: file.read_bytes() for file in tmp_path.iterdir()} == before
+
+
+@pytest.mark.parametrize("options", [
+    {"diagnostic_dtype": "float32"}, {"diagnostic_attention": "eager"},
+])
+def test_profile_overrides_require_diagnostic_mode_before_any_io(tmp_path, monkeypatch, options):
+    """A normal preflight cannot approve another precision while labeling it as locked science."""
+    forbidden = Mock(side_effect=AssertionError("Profile overrides must fail before I/O."))
+    monkeypatch.setattr(preflight, "read_plan", forbidden)
+    with pytest.raises(StudyError, match="require --diagnostic"):
+        preflight.preflight_checkpoint(tmp_path / "not-created.json", "base", **options)
+    forbidden.assert_not_called()
+    assert not list(tmp_path.iterdir())
+
+
+@pytest.mark.parametrize("options", [
+    {"diagnostic_dtype": "float64"}, {"diagnostic_attention": "unverified-kernel"},
+])
+def test_invalid_diagnostic_profiles_fail_before_model_loading(tmp_path, monkeypatch, options):
+    """The direct API enforces the same profile choices as argparse without arbitrary kernels."""
+    path = tmp_path / "plan.json"
+    planning.lock_study(SMOKE, path)
+    forbidden = Mock(side_effect=AssertionError("Invalid profiles cannot allocate a model."))
+    monkeypatch.setattr(preflight, "load_checkpoint", forbidden)
+    with pytest.raises(StudyError, match="Diagnostic profile validation"):
+        preflight.preflight_checkpoint(path, "base", diagnostic=True, **options)
+    forbidden.assert_not_called()
+
+
+def test_failed_control_reports_effective_not_planned_precision(bundle, tmp_path, monkeypatch, capsys):
+    """A failed FP32 control must not be mislabeled as the BF16 profile in the original plan."""
+    path, plan = _profile_plan(tmp_path, "bfloat16", "sdpa")
+    measurements = preflight.cache_parity(_logit_probe(bundle, delta=0.125), (1, 2, 3, 4))
+    monkeypatch.setattr(preflight, "cache_parity", Mock(return_value=measurements))
+    assert main([
+        "posttrain", "preflight", str(path), "--checkpoint", "base", "--device", "cpu",
+        "--diagnostic", "--diagnostic-dtype", "float32", "--diagnostic-attention", "eager",
+    ]) == 1
+    output = capsys.readouterr()
+    report = json.loads(output.err[output.err.index("{"):])
+    assert report["dtype"] == report["effective_inference"]["dtype"] == "float32"
+    assert report["attention"] == report["effective_inference"]["attention"] == "eager"
+    assert report["planned_inference"]["dtype"] == "bfloat16"
+    assert report["planned_inference"]["attention"] == "sdpa"
+    assert report["diagnostic_profile_changed"] and not report["cache_logits_close"]
+    assert report["atol"] == report["rtol"] == 1e-4
+    assert planning.read_plan(path) == plan
+
+
 @pytest.mark.parametrize("failure", ["weights", "vocabulary", "fingerprint"])
 def test_postload_stage_errors_expose_safe_location_only(bundle, monkeypatch, failure):
     """Mock HF acquisition while exercising the real post-load validation/provenance code."""

@@ -199,6 +199,38 @@ execution of a changed-source plan. This command remains cached-only without
 fix requires a newly locked plan and new result directories. Inspect the diagnostic
 failure before deciding which numerical or configuration change is warranted.
 
+For a **finite BF16 cache mismatch**, use explicit numerical controls on the same
+cached checkpoint. First change only attention; then test FP32/eager as a reference.
+Run both commands separately even if the first fails:
+
+```sh
+python -m interp posttrain preflight data/posttrain/math-plan.json --checkpoint base --device cuda:0 --diagnostic --diagnostic-attention eager
+python -m interp posttrain preflight data/posttrain/math-plan.json --checkpoint base --device cuda:0 --diagnostic --diagnostic-dtype float32 --diagnostic-attention eager
+```
+
+These overrides require `--diagnostic` and report `planned_inference` separately
+from `effective_inference`. They keep the exact model/tokenizer revisions, questions,
+generation settings, and existing dtype-specific tolerances. They never modify the
+plan, disable caching, or start/resume trials. FP32 uses the same checkpoint values
+with higher-precision forward operations, not new or redownloaded weights. For 7B,
+FP32 weights alone need roughly 28 GB plus runtime/activation/KV overhead; check
+available GPU and host RAM first. The reported 96 GB Blackwell GPU has room for
+this short control if other processes have not consumed its memory.
+
+A passing BF16/eager control with failing BF16/SDPA suggests attention-path-dependent
+numerics. If only FP32/eager passes, it supplies a conservative candidate profile,
+not proof that the BF16 discrepancy is harmless. Matching argmax and short seeded
+replay do not establish equal sampling distributions or long-run task accuracy.
+Choose and freeze one validated numerical profile for **all** compared checkpoints,
+using new plans/result directories, then preflight each checkpoint. If the reference
+also fails, retain the diagnostic output rather than relaxing the guard.
+
+The GPU transcript used an existing Python 3.13 environment because `python3.11`
+was unavailable; its original 401 offline tests passed. Do not reinstall Python,
+PyTorch, or CUDA merely to address this measured cache mismatch. The earlier pip
+cache-ownership warning, TensorFlow startup messages, and accepted RoPE/deprecation
+warnings were not the reported stopping condition.
+
 ### Multiple GPUs or independent sessions
 
 Prefer different checkpoints on different GPUs, one command/process per GPU. To split

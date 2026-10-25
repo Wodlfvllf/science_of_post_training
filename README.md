@@ -233,8 +233,22 @@ The expanded offline suite passed **424 tests** in 8.48 seconds, including Olmo3
 eager/SDPA cache updates across the sliding window, NaN/Inf/mismatch accounting,
 safe CLI errors, and diagnostic-mode provenance. The standalone diagnostic command
 also passed against an unchanged archived fixture plan after the source update.
-This does **not** reproduce or
-resolve a particular remote GPU failure without its new diagnostic output.
+This does **not** establish real-checkpoint GPU numerical parity.
+
+**Subsequent user-reported GPU diagnostic:** Olmo base at pinned revision
+`a81bae42db3975be1671e27b9c9a56da1a9f980f`, BF16/SDPA, on an NVIDIA RTX PRO 6000
+Blackwell Server Edition (96 GB), Python 3.13.11, Torch 2.11.0/CUDA 13.0 and
+Transformers 4.57.6. All compared logits were finite, but 62 of 802,224 exceeded
+the existing tolerance (maximum absolute difference 0.25, maximum tolerance ratio
+2.15). Argmax and short seeded replay matched. Preflight correctly returned failure;
+no research run followed the user's `preflight && run` command. These are diagnostic
+observations, not benchmark results or a claim that the discrepancy is harmless.
+
+Explicit `--diagnostic-dtype` / `--diagnostic-attention` controls now isolate dtype
+and attention choices without editing the archived plan. Planned/effective profiles
+are separately reported on success and failure. The expanded offline suite passes
+**433 tests** (8.93 seconds), with Ruff passing. The remote BF16/eager and FP32/eager
+controls still need execution on that machine; see the runbook for cached-only commands.
 
 ## Earlier paired-workflow validation
 

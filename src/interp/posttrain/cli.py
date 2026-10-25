@@ -61,6 +61,14 @@ def add_commands(commands: Any) -> None:
         "--diagnostic", action="store_true",
         help="Diagnose an archived plan after code changes; no trials or execution approval.",
     )
+    preflight.add_argument(
+        "--diagnostic-dtype", choices=("float32", "float16", "bfloat16"),
+        help="Explicit dtype control for --diagnostic only; does not change the locked plan.",
+    )
+    preflight.add_argument(
+        "--diagnostic-attention", choices=("eager", "sdpa"),
+        help="Explicit attention control for --diagnostic only; does not change the locked plan.",
+    )
 
 
 def _execution_arguments(parser: argparse.ArgumentParser) -> None:
@@ -131,6 +139,8 @@ def dispatch(arguments: argparse.Namespace) -> dict[str, Any]:
         return preflight_checkpoint(
             arguments.plan, arguments.checkpoint, device=arguments.device,
             allow_downloads=arguments.allow_downloads, diagnostic=arguments.diagnostic,
+            diagnostic_dtype=arguments.diagnostic_dtype,
+            diagnostic_attention=arguments.diagnostic_attention,
         )
     from .runner import inspect_job, resume_study, run_study
     from .schemas import Job

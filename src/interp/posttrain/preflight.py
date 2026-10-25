@@ -18,7 +18,7 @@ from ..schemas import GenerationSpec, PromptSpec
 from .errors import StudyError, study_stage
 from .models import load_checkpoint, preflight_inputs, render_prompt
 from .plan import checkpoint_for, read_plan
-from .schemas import Job
+from .schemas import Inference, Job
 
 
 def cache_parity(bundle: ModelBundle, tokens: tuple[int, ...]) -> dict[str, Any]:
@@ -82,7 +82,8 @@ def cache_parity(bundle: ModelBundle, tokens: tuple[int, ...]) -> dict[str, Any]
 
 def preflight_checkpoint(
     plan_path: Path, checkpoint_name: str, *, device: str = "cuda:0", allow_downloads: bool = False,
-    diagnostic: bool = False,
+    diagnostic: bool = False, diagnostic_dtype: str | None = None,
+    diagnostic_attention: str | None = None,
 ) -> dict[str, Any]:
     """Load a selected checkpoint, check all prompt lengths, short cache parity, and replay.
 
@@ -91,16 +92,32 @@ def preflight_checkpoint(
     Diagnostic mode may inspect an older code-pinned plan after a fix, but reports
     both source hashes and is not approval to execute that plan with changed code.
     Run/resume source enforcement is unchanged. Dataset and model pins remain exact.
+    Explicit diagnostic dtype/attention overrides apply only to this short check.
+    They require diagnostic mode and report planned/effective settings separately;
+    neither the plan, generation settings, nor numerical tolerances are rewritten.
     """
+    # Refuse scientific overrides before loading a plan or allocating any model.
+    if not diagnostic and (diagnostic_dtype is not None or diagnostic_attention is not None):
+        raise StudyError("Diagnostic profile overrides require --diagnostic; run settings stay locked.")
     plan = read_plan(plan_path, check_source=not diagnostic)
+    profile = plan.spec.inference.model_dump(mode="python")
+    if diagnostic_dtype is not None:
+        profile["dtype"] = diagnostic_dtype
+    if diagnostic_attention is not None:
+        profile["attention"] = diagnostic_attention
+    with study_stage("Diagnostic profile validation"):
+        inference = Inference.model_validate(profile)
     current_source = source_digest()
     provenance = {
         "diagnostic_only": diagnostic,
         "plan_source_matches": current_source == plan.source_sha256,
         "plan_source_sha256": plan.source_sha256, "current_source_sha256": current_source,
+        "planned_inference": plan.spec.inference.model_dump(mode="json"),
+        "effective_inference": inference.model_dump(mode="json"),
+        "diagnostic_profile_changed": inference != plan.spec.inference,
     }
     checkpoint = checkpoint_for(plan, Job(checkpoint=checkpoint_name))
-    bundle = load_checkpoint(checkpoint, plan.spec.inference, device_name=device, allow_downloads=allow_downloads)
+    bundle = load_checkpoint(checkpoint, inference, device_name=device, allow_downloads=allow_downloads)
     try:
         with study_stage("Runtime profiling"):
             runtime = runtime_profile(bundle.device)
@@ -126,7 +143,7 @@ def preflight_checkpoint(
                 failed.append("seeded token replay")
             # Only measured numbers/booleans and declared numerical settings enter this message.
             details = {"checkpoint": checkpoint.name, "model_revision": checkpoint.revision,
-                       "dtype": plan.spec.inference.dtype, "attention": plan.spec.inference.attention,
+                       "dtype": inference.dtype, "attention": inference.attention,
                        "runtime_profile": runtime,
                        **provenance, **lengths, **parity, "seeded_tokens_equal": replay}
             raise StudyError(
@@ -137,7 +154,7 @@ def preflight_checkpoint(
         return {"study_id": plan.study_id, "checkpoint": checkpoint_name,
             "model_profile": bundle.profile, "runtime_profile": runtime,
             **provenance, **lengths, **parity, "seeded_tokens_equal": replay,
-            "scope": "diagnostic only; not execution approval for a changed-source plan" if diagnostic
+            "scope": "diagnostic only; not execution approval for a changed-source or changed-profile plan" if diagnostic
             else "short numerical smoke only; no task-accuracy or long-context claim"}
     finally:
         del bundle
