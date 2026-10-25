@@ -1,0 +1,16 @@
+# Constraints for the direct packages actually exercised on macOS arm64 / Python 3.11.14.
+# Use with pip's -c option; this is not a transitive lockfile or a CUDA compatibility claim.
+# Optional groups still control which packages are installed.
+pydantic==2.12.5
+PyYAML==6.0.3
+filelock==3.25.0
+torch==2.10.0
+transformers==4.57.6
+tokenizers==0.22.2
+safetensors==0.7.0
+huggingface-hub==0.36.2
+marimo==0.24.2
+plotly==6.9.0
+pytest==9.0.2
+ruff==0.15.4
+hatchling==1.31.0

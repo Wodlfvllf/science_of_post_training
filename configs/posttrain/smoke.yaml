@@ -1,0 +1,33 @@
+# Random tiny CPU weights test implementation, never the research hypothesis.
+name: posttrain-offline-smoke
+hypothesis: Offline engineering fixture only; predictions have no scientific meaning.
+dataset: ../../tests/fixtures/posttrain_smoke.jsonl
+checkpoints:
+  - name: base
+    stage: base
+    backend: fixture
+    model_id: offline-tiny-gpt2
+    revision: fixture-v1
+  - name: post
+    stage: rl
+    backend: fixture
+    model_id: offline-tiny-gpt2
+    revision: fixture-v1
+prompts:
+  - name: common
+    instruction: "Solve. End with Final answer: <number>."
+    format: completion
+budgets: [4]
+samples: 2
+seed: 2026
+generation:
+  max_new_tokens: 4
+  do_sample: true
+  temperature: 0.6
+  top_p: 0.95
+  top_k: 0
+  use_cache: true
+inference:
+  dtype: float32
+  attention: eager
+  max_context_tokens: 256

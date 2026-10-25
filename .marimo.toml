@@ -1,0 +1,3 @@
+# Expensive work stays stale after edits until explicitly requested.
+[runtime]
+on_cell_change = "lazy"

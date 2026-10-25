@@ -1,0 +1,41 @@
+# Package the small research workbench; heavyweight tools are explicit extras.
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "interp-research"
+version = "0.1.0"
+description = "A small, auditable personal interpretability research workflow"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["pydantic>=2.8,<3", "PyYAML>=6,<7", "filelock>=3.15,<4"]
+
+[project.optional-dependencies]
+models = ["torch>=2.4", "transformers>=4.45,<5", "tokenizers>=0.20", "safetensors>=0.4"]
+# Olmo 3 needs native Transformers support; dataset downloads remain an explicit action.
+posttrain = ["torch>=2.4", "transformers>=4.57,<5", "tokenizers>=0.22", "safetensors>=0.4", "huggingface-hub>=0.36,<1", "datasets>=3,<5"]
+hub = ["huggingface-hub>=0.26,<1"]
+notebooks = ["marimo>=0.10", "plotly>=5.24"]
+dev = ["pytest>=8,<10", "ruff>=0.9"]
+
+[project.scripts]
+interp = "interp.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/interp"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "B", "UP"]
+
+# A final bare UI expression is intentional marimo cell output, not unused Python work.
+[tool.ruff.lint.per-file-ignores]
+"notebooks/*.py" = ["B018"]

@@ -1,0 +1,24 @@
+# Keep environments, credentials, weights, and research outputs out of source control.
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+.DS_Store
+.env
+.env.*
+!.env.example
+data/
+runs/
+# Downloaded reference PDFs stay local; track citations and research notes instead.
+papers/**/*.pdf
+.cache/
+__marimo__/
+*.safetensors
+*.pt
+*.pth

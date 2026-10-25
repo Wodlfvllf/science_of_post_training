@@ -1,0 +1,41 @@
+# Run `data gsm8k` first, then preview/lock. Paths are relative to this file.
+name: olmo3-math-pilot
+hypothesis: Post-training increases single-sample reliability more than observed sampled coverage under matched prompting and budgets.
+dataset: ../../data/posttrain/gsm8k-pilot.jsonl
+checkpoints:
+  - name: base
+    stage: base
+    model_id: allenai/Olmo-3-1025-7B
+    revision: main
+  - name: sft
+    stage: sft
+    model_id: allenai/Olmo-3-7B-Think-SFT
+    revision: main
+  - name: dpo
+    stage: dpo
+    model_id: allenai/Olmo-3-7B-Think-DPO
+    revision: main
+  - name: rl
+    stage: rl
+    model_id: allenai/Olmo-3-7B-Think
+    revision: main
+prompts:
+  - name: common
+    format: completion
+  - name: native
+    format: native
+budgets: [512, 2048]
+samples: 8
+seed: 2026
+generation:
+  enabled: true
+  max_new_tokens: 512
+  do_sample: true
+  temperature: 0.6
+  top_p: 0.95
+  top_k: 0
+  use_cache: true
+inference:
+  dtype: bfloat16
+  attention: sdpa
+  max_context_tokens: 16384

@@ -1,0 +1,30 @@
+# An offline engineering check, not a selected research project or meaningful model.
+schema_version: 1
+name: offline-smoke
+hypothesis: "The workflow preserves exact paired inputs and reproducible model scores."
+alternative: "A tokenization, scoring, or resume bug creates an apparent paired effect."
+dataset:
+  id: smoke-pairs-v1
+  path: ../tests/fixtures/smoke_examples.jsonl
+conditions: [baseline, changed]
+controls: [matched candidates, paired sources, random-model engineering fixture]
+model:
+  backend: fixture
+  model_id: offline-tiny-gpt2
+  revision: fixture-v1
+  initialization_seed: 17
+  device: cpu
+  dtype: float32
+prompt:
+  add_bos: true
+  max_sequence_tokens: 256
+generation:
+  enabled: true
+  max_new_tokens: 8
+  do_sample: false
+replicates: 1
+seed: 2026
+execution:
+  output_dir: ../runs/smoke
+  shard_records: 2
+  max_shard_bytes: 4194304

@@ -1,0 +1,2 @@
+{"id":"addition","source_id":"addition","group_id":"addition","split":"pilot","task":"math","question":"What is 2 + 3?","answer":"5","provenance":"hand-verified engineering fixture"}
+{"id":"multiply","source_id":"multiply","group_id":"multiply","split":"pilot","task":"math","question":"What is 3 * 7?","answer":"21","provenance":"hand-verified engineering fixture"}
