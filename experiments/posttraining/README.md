@@ -167,6 +167,38 @@ reports. GPU ordinal alone is not scientific identity. A model is loaded on one
 selected GPU with no model parallelism or quantization; 7B BF16 weights alone need
 roughly 14 GB, plus KV cache, runtime/workspace, and CPU loading memory.
 
+### If preflight fails after downloading/loading
+
+Completed shard downloads do not imply that model validation or numerical checks
+passed. The CLI identifies controlled failures such as vocabulary/context mismatches
+and labels dependency stages without printing raw HTTP messages or prompt contents.
+A numerical rejection reports the actual GPU/library profile, cache finiteness,
+compared/mismatched logit counts, maximum absolute difference, maximum tolerance
+ratio, argmax agreement, and the **separate** seeded-token replay result.
+
+`max_tolerance_ratio` compares each absolute difference with
+`atol + rtol * abs(cached_logit)`; a value above one exceeds the existing tolerance.
+NaN/Inf always fail, even when both outputs contain the same infinity. Error maxima
+are null for nonfinite outputs, and generation replay is skipped in that case.
+Matching argmax tokens do **not** waive the logit check. Do not increase tolerances,
+disable the guard, resize embeddings, or silently change dtype/attention just to pass.
+
+After a diagnostics-only code update, ordinary preflight/run/resume still reject an
+older source-pinned plan. To inspect the **same archived model/data revisions** using
+the cached weights without overwriting that plan or resolving a newer `main`:
+
+```sh
+git pull --ff-only
+python -m interp posttrain preflight data/posttrain/math-plan.json --checkpoint base --device cuda:0 --diagnostic
+```
+
+Substitute the plan/checkpoint/device from the failed invocation. `--diagnostic`
+writes no trials, reports the old/current source hashes, and does not approve
+execution of a changed-source plan. This command remains cached-only without
+`--allow-downloads`. Preserve existing plans/results; actual research after a code
+fix requires a newly locked plan and new result directories. Inspect the diagnostic
+failure before deciding which numerical or configuration change is warranted.
+
 ### Multiple GPUs or independent sessions
 
 Prefer different checkpoints on different GPUs, one command/process per GPU. To split

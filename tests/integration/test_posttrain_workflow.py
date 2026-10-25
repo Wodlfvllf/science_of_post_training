@@ -121,7 +121,9 @@ def test_cached_sample_replays_and_restores_state(bundle):
     assert cache_parity(bundle, (1, 22, 23, 24, 25))["cache_logits_close"]
 
 
-def test_tiny_olmo3_cache_parity_on_cpu(bundle):
+@pytest.mark.parametrize("attention", ["eager", "sdpa"])
+@pytest.mark.parametrize("length", [6, 20, 40])
+def test_tiny_olmo3_cache_parity_on_cpu(bundle, attention, length):
     """Exercise the actual Olmo3 implementation offline, not only a GPT-2 surrogate.
 
     Tiny random architecture parity is engineering evidence only; it cannot verify
@@ -137,10 +139,11 @@ def test_tiny_olmo3_cache_parity_on_cpu(bundle):
         layer_types=["sliding_attention", "full_attention"],
         eos_token_id=2, bos_token_id=1, pad_token_id=0,
     )
-    config._attn_implementation = "eager"
+    config._attn_implementation = attention
     with torch.random.fork_rng(devices=[]):
         torch.random.default_generator.manual_seed(17)
         model = Olmo3ForCausalLM(config).eval()
     olmo = replace(bundle, model=model)
-    measured = cache_parity(olmo, (1, 10, 11, 12, 13, 14))
-    assert measured["cache_logits_close"]
+    # Exercise both short prefixes and cache updates across/beyond the sliding window.
+    measured = cache_parity(olmo, tuple(range(1, length + 1)))
+    assert measured["cache_logits_close"] and measured["cache_logits_finite"]

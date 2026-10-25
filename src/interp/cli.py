@@ -17,6 +17,7 @@ from typing import Any
 from .artifacts import ArtifactError, read_run
 from .config import prepare_run, with_execution
 from .metrics import paired_effects
+from .posttrain.errors import StudyError
 from .runner import TrialExecutionError, resume_experiment, run_experiment, summarize_run
 from .schemas import ExecutionSpec
 
@@ -168,7 +169,7 @@ def main(argv: list[str] | None = None) -> int:
         # Use the conventional shell interrupt exit code.
         return 130
     # Controlled artifact/runner errors contain intentionally safe, actionable messages.
-    except (ArtifactError, TrialExecutionError) as error:
+    except (ArtifactError, TrialExecutionError, StudyError) as error:
         # Show only workbench-controlled errors, not nested model/HTTP exception messages.
         print(str(error), file=sys.stderr)
         # Report an unsuccessful operation without falsely acknowledging completion.

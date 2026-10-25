@@ -57,6 +57,10 @@ def add_commands(commands: Any) -> None:
     preflight.add_argument("--checkpoint", required=True)
     preflight.add_argument("--device", default="cuda:0")
     preflight.add_argument("--allow-downloads", action="store_true")
+    preflight.add_argument(
+        "--diagnostic", action="store_true",
+        help="Diagnose an archived plan after code changes; no trials or execution approval.",
+    )
 
 
 def _execution_arguments(parser: argparse.ArgumentParser) -> None:
@@ -126,7 +130,7 @@ def dispatch(arguments: argparse.Namespace) -> dict[str, Any]:
 
         return preflight_checkpoint(
             arguments.plan, arguments.checkpoint, device=arguments.device,
-            allow_downloads=arguments.allow_downloads,
+            allow_downloads=arguments.allow_downloads, diagnostic=arguments.diagnostic,
         )
     from .runner import inspect_job, resume_study, run_study
     from .schemas import Job

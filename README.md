@@ -221,6 +221,21 @@ Real Olmo tokenizer templates, downloaded checkpoints, GPU kernels/long contexts
 throughput, and remote persistence still require validation on the target machine.
 The runbook includes the explicit preflight and resumable pilot commands.
 
+### Remote-failure diagnostics update — 2026-10-25
+
+Post-load failures now expose safe operation labels and numerical measurements rather
+than a generic `ValueError`. Cache checks also reject nonfinite logits explicitly;
+the existing tolerances, dtype, attention choice, and generation settings are unchanged.
+The read-only `preflight --diagnostic` mode can inspect an older source-pinned plan
+after an update, reporting both source hashes without weakening run/resume locks.
+
+The expanded offline suite passed **424 tests** in 8.48 seconds, including Olmo3
+eager/SDPA cache updates across the sliding window, NaN/Inf/mismatch accounting,
+safe CLI errors, and diagnostic-mode provenance. The standalone diagnostic command
+also passed against an unchanged archived fixture plan after the source update.
+This does **not** reproduce or
+resolve a particular remote GPU failure without its new diagnostic output.
+
 ## Earlier paired-workflow validation
 
 Verified on **macOS arm64, Python 3.11.14, CPU float32**, using the editor-selected conda
