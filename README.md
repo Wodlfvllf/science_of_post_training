@@ -248,7 +248,32 @@ Explicit `--diagnostic-dtype` / `--diagnostic-attention` controls now isolate dt
 and attention choices without editing the archived plan. Planned/effective profiles
 are separately reported on success and failure. The expanded offline suite passes
 **433 tests** (8.93 seconds), with Ruff passing. The remote BF16/eager and FP32/eager
-controls still need execution on that machine; see the runbook for cached-only commands.
+controls were subsequently run on that machine; see the observations below.
+
+### FP32 reference pilot — 2026-10-25
+
+The user-reported BF16/eager control also failed (288/802,224 logits outside tolerance,
+maximum absolute difference 0.25). **FP32/eager passed**: zero mismatches, all finite,
+matching argmax and seeded replay, maximum absolute difference 0.0001068115 and
+maximum tolerance ratio 0.0789364 at `atol=rtol=1e-4`. This supports precision-related
+numerics, not an SDPA-only issue; it does not prove BF16 sampling equivalence.
+
+Both pilot YAMLs now explicitly select FP32/eager and pin the same four checkpoint
+revisions as the initial study. The original datasets, prompts, samples, budgets,
+and cache setting remain unchanged. This update changes configs/docs/tests only;
+package execution source and numerical tolerances are unchanged. Create **new**
+FP32 plans and result directories using the runbook; retain the earlier BF16 plans.
+
+Only the short base-model control has passed remotely. Preflight each remaining
+checkpoint, then run a few samples before a long invocation. FP32 may be much slower;
+throughput, full-budget behavior, research accuracy, and remote persistence are not
+established by this numerical smoke test.
+
+Local validation of this config update: **435 offline tests passed** in 8.94 seconds,
+Ruff passed, and the package source hash still matches the passing remote diagnostic
+(`f9f24e86e8e979e4b59056c6f8cd286a197722cf1aeb9b8b0a2ae0c0e67a827f`). Tests verify
+both pilot configs lock offline with the original checkpoint pins and unchanged
+data while assigning a new study identity to the FP32 profile.
 
 ## Earlier paired-workflow validation
 

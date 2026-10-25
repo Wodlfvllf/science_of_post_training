@@ -447,3 +447,47 @@ def test_locked_plan_schema_rejects_missing_or_nonimmutable_refs(tmp_path, refs)
     raw["spec"]["checkpoints"] = [_hf_checkpoint(**refs)]
     with pytest.raises(ValidationError, match="Lock full model and tokenizer revisions"):
         StudyPlan.model_validate(raw)
+
+
+@pytest.mark.parametrize("study", ["math", "repair"])
+def test_pilot_configs_pin_original_lineage_and_explicit_reference_profile(
+    tmp_path, no_optional_imports, study,
+):
+    """Freeze the FP32 pilot offline without selecting new checkpoints or changing the data.
+
+    Small local examples replace only the dataset location for this contract test.
+    These are planning checks, not pretrained or GPU validation of any checkpoint.
+    """
+    spec = planning.load_spec(ROOT / "configs" / "posttrain" / f"{study}-pilot.yaml")
+    expected = [
+        ("base", "allenai/Olmo-3-1025-7B", "a81bae42db3975be1671e27b9c9a56da1a9f980f"),
+        ("sft", "allenai/Olmo-3-7B-Think-SFT", "6ff857587e040d6d523a3d5f3a56e918f5401d66"),
+        ("dpo", "allenai/Olmo-3-7B-Think-DPO", "7b18bf927b430ff06376fdfa5610eb3b1b6a5c38"),
+        ("rl", "allenai/Olmo-3-7B-Think", "d97e442d7cc678210054dbcc9b440894d62c89a4"),
+    ]
+    assert [(row.name, row.model_id, row.revision) for row in spec.checkpoints] == expected
+    assert [row.stage for row in spec.checkpoints] == [row[0] for row in expected]
+    assert spec.inference.dtype == "float32" and spec.inference.attention == "eager"
+    assert spec.inference.max_context_tokens == 16384
+    assert spec.samples == 8 and spec.generation.use_cache
+    assert spec.budgets == ((512, 2048) if study == "math" else (256, 1024))
+    data = tmp_path / "questions.jsonl"
+    problems = load_problems(ROOT / "tests" / "fixtures" / "posttrain_smoke.jsonl") if study == "math" else make_repair_problems(count=2)
+    write_problems(data, problems)
+    raw = spec.model_dump(mode="json")
+    raw["dataset"] = str(data)
+    locked = planning.lock_study(_write_spec(tmp_path / "fp32", raw), tmp_path / "fp32-plan.json")
+    assert locked.problems == problems
+    assert all(
+        row.tokenizer_id == row.model_id and row.tokenizer_revision == row.revision
+        for row in locked.spec.checkpoints
+    )
+    # Recreate the original numerical profile with the exact same data and resolved pins.
+    raw["inference"].update(dtype="bfloat16", attention="sdpa")
+    old_path = tmp_path / "bf16-plan.json"
+    old = planning.lock_study(_write_spec(tmp_path / "bf16", raw), old_path)
+    assert old.study_id != locked.study_id
+    assert old.source_sha256 == locked.source_sha256
+    assert old.dataset_sha256 == locked.dataset_sha256
+    assert old.spec.model_dump(exclude={"inference"}) == locked.spec.model_dump(exclude={"inference"})
+    assert planning.read_plan(old_path) == old

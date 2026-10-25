@@ -1,4 +1,6 @@
 # Run `data gsm8k` first, then preview/lock. Paths are relative to this file.
+# FP32/eager is the conservative pilot profile after the reported Blackwell check.
+# Preserve the exact checkpoint revisions from the initial BF16 study plans.
 name: olmo3-math-pilot
 hypothesis: Post-training increases single-sample reliability more than observed sampled coverage under matched prompting and budgets.
 dataset: ../../data/posttrain/gsm8k-pilot.jsonl
@@ -6,19 +8,19 @@ checkpoints:
   - name: base
     stage: base
     model_id: allenai/Olmo-3-1025-7B
-    revision: main
+    revision: a81bae42db3975be1671e27b9c9a56da1a9f980f
   - name: sft
     stage: sft
     model_id: allenai/Olmo-3-7B-Think-SFT
-    revision: main
+    revision: 6ff857587e040d6d523a3d5f3a56e918f5401d66
   - name: dpo
     stage: dpo
     model_id: allenai/Olmo-3-7B-Think-DPO
-    revision: main
+    revision: 7b18bf927b430ff06376fdfa5610eb3b1b6a5c38
   - name: rl
     stage: rl
     model_id: allenai/Olmo-3-7B-Think
-    revision: main
+    revision: d97e442d7cc678210054dbcc9b440894d62c89a4
 prompts:
   - name: common
     format: completion
@@ -36,6 +38,6 @@ generation:
   top_k: 0
   use_cache: true
 inference:
-  dtype: bfloat16
-  attention: sdpa
+  dtype: float32
+  attention: eager
   max_context_tokens: 16384

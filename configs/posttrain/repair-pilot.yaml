@@ -1,4 +1,5 @@
 # Generated task context is assisted; it is not a natural-error detection benchmark.
+# Match the FP32/eager math pilot and the initial study's exact checkpoint revisions.
 name: olmo3-repair-pilot
 hypothesis: The base-to-posttraining repair gap narrows under an explicit check cue compared with a neutral continuation cue.
 dataset: ../../data/posttrain/repair-pilot.jsonl
@@ -6,19 +7,19 @@ checkpoints:
   - name: base
     stage: base
     model_id: allenai/Olmo-3-1025-7B
-    revision: main
+    revision: a81bae42db3975be1671e27b9c9a56da1a9f980f
   - name: sft
     stage: sft
     model_id: allenai/Olmo-3-7B-Think-SFT
-    revision: main
+    revision: 6ff857587e040d6d523a3d5f3a56e918f5401d66
   - name: dpo
     stage: dpo
     model_id: allenai/Olmo-3-7B-Think-DPO
-    revision: main
+    revision: 7b18bf927b430ff06376fdfa5610eb3b1b6a5c38
   - name: rl
     stage: rl
     model_id: allenai/Olmo-3-7B-Think
-    revision: main
+    revision: d97e442d7cc678210054dbcc9b440894d62c89a4
 prompts:
   - name: uncued
     format: completion
@@ -41,6 +42,6 @@ generation:
   top_k: 0
   use_cache: true
 inference:
-  dtype: bfloat16
-  attention: sdpa
+  dtype: float32
+  attention: eager
   max_context_tokens: 16384

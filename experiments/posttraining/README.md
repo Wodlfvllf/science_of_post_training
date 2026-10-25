@@ -5,6 +5,12 @@
 This is an inference-only study of **one checkpoint lineage**, not a controlled
 comparison of training algorithms. No models are trained by this experiment.
 
+The current pilot configs explicitly select **FP32/eager** for every checkpoint,
+with the same full model/tokenizer revisions as the initial BF16 plans. This is a
+conservative numerical profile selected after the base checkpoint passed the short
+GPU control below. It is not a claim that SFT/DPO/RL or full-budget runs have passed;
+preflight each checkpoint and start with a few samples. No tolerance was relaxed.
+
 ### E1 — accuracy, elicitation, and sampled coverage
 
 - Task: exact numerical answers to GSM8K word problems.
@@ -126,16 +132,22 @@ one sample at a time for stable per-trial RNG and modest VRAM, not maximum throu
 ### 2. Freeze plans once, then distribute the same bytes/code
 
 ```sh
-python -m interp posttrain lock configs/posttrain/math-pilot.yaml --output data/posttrain/math-plan.json --allow-downloads
-python -m interp posttrain lock configs/posttrain/repair-pilot.yaml --output data/posttrain/repair-plan.json --allow-downloads
+python -m interp posttrain lock configs/posttrain/math-pilot.yaml --output data/posttrain/math-fp32-plan.json
+python -m interp posttrain lock configs/posttrain/repair-pilot.yaml --output data/posttrain/repair-fp32-plan.json
 ```
 
-`lock` resolves model/tokenizer branches to full commit SHAs and embeds all examples,
-science, and a recursive package-source digest. **It does not download weights.**
-Every worker should use the same plan and code, not independently resolve `main`.
+The shipped configs already pin full commit SHAs, so locking them is offline.
+`lock` embeds all examples, science, and a recursive package-source digest. **It
+does not download weights.** Custom configs with floating refs require explicit
+`--allow-downloads` to resolve them. Every worker should use the same plan and code.
 The plan contains gold labels for local grading, but rendering never uses them.
 Changing questions, prompts, precision, code, samples, or budgets requires a new plan
 and new result directories. Comments in package source count as code changes.
+
+If the initial BF16 plans and pilot JSONL already exist, keep them: do not regenerate
+the datasets or overwrite the old plans. The FP32 plan names above are deliberately
+new. The checkpoint pins match the original reported plans, so cached base weights
+are reused; loading another checkpoint still requires its own download.
 
 Data and runs are git-ignored. Generate plans on the GPU host after pushing the code,
 or copy locked plans explicitly to the remote machine/shared durable storage. A plan
@@ -144,28 +156,41 @@ does not depend on its original YAML/JSONL paths during run or resume.
 ### 3. Check the actual GPU, then run the two endpoints
 
 ```sh
-python -m interp posttrain preflight data/posttrain/math-plan.json --checkpoint base --device cuda:0 --allow-downloads
-python -m interp posttrain preflight data/posttrain/math-plan.json --checkpoint rl --device cuda:0 --allow-downloads
-python -m interp posttrain run data/posttrain/math-plan.json --checkpoint base --device cuda:0 --output-dir runs/posttrain/math-base --allow-downloads --max-new-trials 4
-python -m interp posttrain resume runs/posttrain/math-base --device cuda:0 --max-seconds 36000 --shutdown-margin-seconds 120
-python -m interp posttrain run data/posttrain/math-plan.json --checkpoint rl --device cuda:0 --output-dir runs/posttrain/math-rl --allow-downloads --max-seconds 36000 --shutdown-margin-seconds 120
+python -m interp posttrain preflight data/posttrain/math-fp32-plan.json --checkpoint base --device cuda:0 --allow-downloads &&
+python -m interp posttrain run data/posttrain/math-fp32-plan.json --checkpoint base --device cuda:0 --output-dir runs/posttrain/math-fp32-base --allow-downloads --max-new-trials 4
+
+python -m interp posttrain preflight data/posttrain/math-fp32-plan.json --checkpoint rl --device cuda:0 --allow-downloads &&
+python -m interp posttrain run data/posttrain/math-fp32-plan.json --checkpoint rl --device cuda:0 --output-dir runs/posttrain/math-fp32-rl --allow-downloads --max-new-trials 4
+```
+
+After inspecting the short runs and their runtime, continue each separately:
+
+```sh
+python -m interp posttrain resume runs/posttrain/math-fp32-base --device cuda:0 --max-seconds 36000 --shutdown-margin-seconds 120
+python -m interp posttrain resume runs/posttrain/math-fp32-rl --device cuda:0 --max-seconds 36000 --shutdown-margin-seconds 120
 ```
 
 Use `sft` and `dpo` identically once the endpoint pilot has been inspected. For E2:
 
 ```sh
-python -m interp posttrain preflight data/posttrain/repair-plan.json --checkpoint base --device cuda:0 --allow-downloads
-python -m interp posttrain preflight data/posttrain/repair-plan.json --checkpoint rl --device cuda:0 --allow-downloads
-python -m interp posttrain run data/posttrain/repair-plan.json --checkpoint base --device cuda:0 --output-dir runs/posttrain/repair-base --allow-downloads --max-seconds 36000 --shutdown-margin-seconds 120
-python -m interp posttrain run data/posttrain/repair-plan.json --checkpoint rl --device cuda:0 --output-dir runs/posttrain/repair-rl --allow-downloads --max-seconds 36000 --shutdown-margin-seconds 120
+python -m interp posttrain preflight data/posttrain/repair-fp32-plan.json --checkpoint base --device cuda:0 --allow-downloads &&
+python -m interp posttrain run data/posttrain/repair-fp32-plan.json --checkpoint base --device cuda:0 --output-dir runs/posttrain/repair-fp32-base --allow-downloads --max-new-trials 4
+
+python -m interp posttrain preflight data/posttrain/repair-fp32-plan.json --checkpoint rl --device cuda:0 --allow-downloads &&
+python -m interp posttrain run data/posttrain/repair-fp32-plan.json --checkpoint rl --device cuda:0 --output-dir runs/posttrain/repair-fp32-rl --allow-downloads --max-new-trials 4
 ```
 
-BF16 is explicit in the pilot configs. For older GPUs without supported BF16, edit
-the config to FP16 **before locking**, and run preflight; no automatic dtype fallback
-occurs. Different actual GPU/library profiles are refused on resume and in pooled
-reports. GPU ordinal alone is not scientific identity. A model is loaded on one
-selected GPU with no model parallelism or quantization; 7B BF16 weights alone need
-roughly 14 GB, plus KV cache, runtime/workspace, and CPU loading memory.
+FP32/eager may be substantially slower than BF16/SDPA. The first four scheduled
+samples exercise the smaller budget, not the largest cap or the entire dataset;
+inspect larger-budget performance as the pilot progresses. A ten-hour invocation
+limit is a stopping budget, **not an estimate of completion time**.
+
+No automatic dtype/attention fallback occurs. Different actual GPU/library profiles
+are refused on resume and in pooled reports. GPU ordinal alone is not scientific
+identity. A model is loaded on one selected GPU with no model parallelism or
+quantization; 7.3B FP32 weights need about 29 GB decimal (27 GiB), plus KV cache,
+runtime/workspace, and CPU loading memory. Keep all compared checkpoints on the same
+declared and verified profile; do not mix a BF16 endpoint with an FP32 endpoint.
 
 ### If preflight fails after downloading/loading
 
@@ -212,8 +237,8 @@ These overrides require `--diagnostic` and report `planned_inference` separately
 from `effective_inference`. They keep the exact model/tokenizer revisions, questions,
 generation settings, and existing dtype-specific tolerances. They never modify the
 plan, disable caching, or start/resume trials. FP32 uses the same checkpoint values
-with higher-precision forward operations, not new or redownloaded weights. For 7B,
-FP32 weights alone need roughly 28 GB plus runtime/activation/KV overhead; check
+with higher-precision forward operations, not new or redownloaded weights. For this
+7.3B model, FP32 weights alone need about 29 GB plus runtime/activation/KV overhead; check
 available GPU and host RAM first. The reported 96 GB Blackwell GPU has room for
 this short control if other processes have not consumed its memory.
 
@@ -231,14 +256,24 @@ PyTorch, or CUDA merely to address this measured cache mismatch. The earlier pip
 cache-ownership warning, TensorFlow startup messages, and accepted RoPE/deprecation
 warnings were not the reported stopping condition.
 
+**Observed base-checkpoint controls on that GPU:** BF16/SDPA had 62/802,224
+coordinates outside tolerance; BF16/eager had 288/802,224. Both were finite, with
+maximum absolute difference 0.25 and matching argmax/seeded replay. FP32/eager had
+zero mismatches, maximum absolute difference 0.0001068115, and maximum tolerance
+ratio 0.0789364 under `atol=rtol=1e-4`; it passed finite-logit, parity, and replay
+checks. Absolute error alone is not the pass criterion because `rtol` also applies.
+This supports a precision-related explanation rather than an SDPA-only failure.
+It establishes only this short base-checkpoint control, not long-context or
+cross-checkpoint validation. The current FP32 pilot setup above is the next step.
+
 ### Multiple GPUs or independent sessions
 
 Prefer different checkpoints on different GPUs, one command/process per GPU. To split
 one checkpoint across two GPUs, keep the same `--num-shards 2` for both workers:
 
 ```sh
-python -m interp posttrain run data/posttrain/math-plan.json --checkpoint base --device cuda:0 --num-shards 2 --shard-index 0 --output-dir runs/posttrain/math-base-0 --allow-downloads
-python -m interp posttrain run data/posttrain/math-plan.json --checkpoint base --device cuda:1 --num-shards 2 --shard-index 1 --output-dir runs/posttrain/math-base-1 --allow-downloads
+python -m interp posttrain run data/posttrain/math-fp32-plan.json --checkpoint base --device cuda:0 --num-shards 2 --shard-index 0 --output-dir runs/posttrain/math-fp32-base-0 --allow-downloads
+python -m interp posttrain run data/posttrain/math-fp32-plan.json --checkpoint base --device cuda:1 --num-shards 2 --shard-index 1 --output-dir runs/posttrain/math-fp32-base-1 --allow-downloads
 ```
 
 Launch those commands in separate sessions/scheduler jobs. Group hashing assigns both
@@ -250,9 +285,9 @@ shards for a represented checkpoint when requesting a complete report.
 ### 4. Inspect and report without a GPU
 
 ```sh
-python -m interp posttrain inspect runs/posttrain/math-base
-python -m interp posttrain analyze runs/posttrain/math-base runs/posttrain/math-rl --output runs/posttrain/math-report
-python -m interp posttrain analyze runs/posttrain/repair-base runs/posttrain/repair-rl --output runs/posttrain/repair-report
+python -m interp posttrain inspect runs/posttrain/math-fp32-base
+python -m interp posttrain analyze runs/posttrain/math-fp32-base runs/posttrain/math-fp32-rl --output runs/posttrain/math-fp32-report
+python -m interp posttrain analyze runs/posttrain/repair-fp32-base runs/posttrain/repair-fp32-rl --output runs/posttrain/repair-fp32-report
 ```
 
 Reports include JSON, per-cell/per-question/paired-comparison CSVs, and a readable
