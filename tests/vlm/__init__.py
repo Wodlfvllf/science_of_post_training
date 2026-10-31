@@ -1,0 +1,1 @@
+"""Namespace VLM tests to avoid collisions with the original integration modules."""

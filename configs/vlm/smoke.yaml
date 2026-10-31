@@ -1,0 +1,12 @@
+# Random CPU-only plumbing; these labels are NOT scientific stage comparisons.
+name: offline-vlm-plumbing
+dataset: ../../data/vlm-smoke
+seed: 17
+max_new_tokens: 4
+inference:
+  device: cpu
+  dtype: float32
+  max_context_tokens: 1024
+checkpoints:
+  - {name: fixture-mpo, family: fixture, stage: mpo, backend: fixture, model_id: offline-random-qwen3, revision: fixture-v1, fixture_seed: 17}
+  - {name: fixture-gspo, family: fixture, stage: gspo, backend: fixture, model_id: offline-random-qwen3, revision: fixture-v1, fixture_seed: 19}

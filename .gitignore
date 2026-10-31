@@ -1,5 +1,6 @@
 # Keep environments, credentials, weights, and research outputs out of source control.
 .venv/
+.venv-vlm/
 __pycache__/
 *.py[cod]
 .pytest_cache/

@@ -5,6 +5,21 @@ loop and a first personal **science-of-post-training** study. It is not a public
 framework or a GPU-validated toolkit. The broader roadmap remains in
 [RESEARCH_PLAN.md](RESEARCH_PLAN.md).
 
+## VLM Reading-or-Routing pilot
+
+The separate [VLM runbook](experiments/vlm_posttraining/README.md) implements the
+[deadline-gated hypotheses](experiments/vlm_posttraining/SPRINT.md): auditable
+single-image factorial scenes, native InternVL3.5 baseline controls, Q/K/V routing
+interventions, selected-weight rollback/replay, mediator tests and source-family
+paired reports. Use the standalone `interp-vlm` / `python -m vlm_pilot` command.
+For remote marimo sessions, open [notebooks/vlm_pilot.py](notebooks/vlm_pilot.py):
+explicit setup/run buttons launch isolated CLI workers, while monitoring is read-only.
+
+The [vlm_pilot package](src/vlm_pilot/) has its own immutable plan/source identity;
+the active text-study Python sources remain unchanged. The launcher creates a
+separate environment and refuses an occupied GPU. Offline random-Qwen3 tests are
+plumbing validation, not real-checkpoint/GPU validation or hypothesis findings.
+
 ## First research project: base → SFT → DPO → RL
 
 See [experiments/posttraining/README.md](experiments/posttraining/README.md) for the
@@ -65,6 +80,7 @@ causal interventions, activation capture, and pretrained GPU parity are **not im
 | Base | Pydantic, safe YAML, OS-backed file locking; inspect artifacts without Torch |
 | `models` | PyTorch, Transformers, tokenizers, safetensors |
 | `posttrain` | Native Olmo 3 inference, Hub revision resolution, optional GSM8K acquisition |
+| `vlm` | Separate native InternVL/Qwen3 pilot, image generation and causal interventions |
 | `hub` | Explicit authenticated HF persistence |
 | `notebooks` | marimo and Plotly displays |
 | `dev` | Offline pytest checks and Ruff |

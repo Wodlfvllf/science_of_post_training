@@ -15,15 +15,18 @@ dependencies = ["pydantic>=2.8,<3", "PyYAML>=6,<7", "filelock>=3.15,<4"]
 models = ["torch>=2.4", "transformers>=4.45,<5", "tokenizers>=0.20", "safetensors>=0.4"]
 # Olmo 3 needs native Transformers support; dataset downloads remain an explicit action.
 posttrain = ["torch>=2.4", "transformers>=4.57,<5", "tokenizers>=0.22", "safetensors>=0.4", "huggingface-hub>=0.36,<1", "datasets>=3,<5"]
+# Separate package/source identity; scoped native Qwen3 hooks target this exact HF interface.
+vlm = ["torch>=2.10", "transformers==4.57.6", "tokenizers>=0.22", "safetensors>=0.7", "huggingface-hub>=0.36,<1", "numpy>=1.26,<3", "Pillow==12.1.1", "einops>=0.8", "timm>=1.0", "torchvision>=0.25", "accelerate>=1.2"]
 hub = ["huggingface-hub>=0.26,<1"]
 notebooks = ["marimo>=0.10", "plotly>=5.24"]
 dev = ["pytest>=8,<10", "ruff>=0.9"]
 
 [project.scripts]
 interp = "interp.cli:main"
+interp-vlm = "vlm_pilot.cli:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/interp"]
+packages = ["src/interp", "src/vlm_pilot"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

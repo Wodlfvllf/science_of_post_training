@@ -1,0 +1,23 @@
+# Eight native full checkpoints; execute one checkpoint/phase/GPU job at a time.
+name: reading-or-routing-internvl35
+dataset: ../../data/vlm-pilot
+seed: 20261031
+max_new_tokens: 64
+inference:
+  device: cuda:0
+  dtype: float32
+  image_size: 448
+  max_context_tokens: 1024
+  system_message: You are a helpful assistant.
+  answer_prefix: "Answer:"
+  atol: 0.0001
+  rtol: 0.0001
+checkpoints:
+  - {name: 2b-cpt, family: 2b, stage: cpt, model_id: OpenGVLab/InternVL3_5-2B-Pretrained, revision: ce387f38cd21603625cdeb6c37f34a2bb89a771a}
+  - {name: 2b-sft, family: 2b, stage: sft, model_id: OpenGVLab/InternVL3_5-2B-Instruct, revision: a1e50c526faea805730148e7b1f2af18abe9e4b2}
+  - {name: 2b-mpo, family: 2b, stage: mpo, model_id: OpenGVLab/InternVL3_5-2B-MPO, revision: bf5ffd82a66a10df7de9fe520239a837c8808798}
+  - {name: 2b-gspo, family: 2b, stage: gspo, model_id: OpenGVLab/InternVL3_5-2B, revision: 7d7bd7bcc35b77b391883ebd7f9686cfa0e25cc0}
+  - {name: 8b-cpt, family: 8b, stage: cpt, model_id: OpenGVLab/InternVL3_5-8B-Pretrained, revision: e21d3bab4089ed923c08072a1eefc8b5faf41cd8}
+  - {name: 8b-sft, family: 8b, stage: sft, model_id: OpenGVLab/InternVL3_5-8B-Instruct, revision: 27506812aa9914804018996329e895977ee2d0c8}
+  - {name: 8b-mpo, family: 8b, stage: mpo, model_id: OpenGVLab/InternVL3_5-8B-MPO, revision: bb33f08275aa566f3442c1f5002512ffb66d7952}
+  - {name: 8b-gspo, family: 8b, stage: gspo, model_id: OpenGVLab/InternVL3_5-8B, revision: 9bb6a56ad9cc69db95e2d4eeb15a52bbcac4ef79}
