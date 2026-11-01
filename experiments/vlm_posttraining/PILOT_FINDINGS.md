@@ -88,3 +88,66 @@ families remain untouched. Before opening them, establish a credible relational
 assay and a selective, explained stage-linked operation on development data;
 resolve response policy and projector changes. Do not train merely to force a
 positive endpoint difference, or present this sweep as a mechanistic contribution.
+
+## Follow-up evidence · same day, explicitly developmental
+
+The user requested continued paper-oriented investigation after the initial stop
+gate. None of the following changes the original scorer, data, plan or primary
+endpoint. New diagnostics are separately sourced and never counted as locked
+confirmation trials.
+
+- **Qualification:** independent one-tile torchvision RGB/bicubic/ImageNet pixel
+  preprocessing matches exactly on six engineering images; native separator and
+  tokenizer EOS both equal 151645. No preprocessing/EOS mismatch found.
+- **Decomposition:** eight engineering families, 64 variants per 8B endpoint.
+  Destination-shape answers are 37/64 at both stages; original destination-color
+  answers are 9/64 MPO and 10/64 GSPO under separate case-combined scoring.
+  Direct anchor and destination-color readout are 64/64 each. Explicit wording
+  yields 17/64 and 16/64 color answers. This identifies a behavioral composition
+  gap, not a latent accurate selector or a new mechanistic contribution.
+- **Projector factorial:** eight engineering families, native/self/opposite-stage/
+  permuted-delta sham. MPO binding 9/64→11/64 with GSPO projector; GSPO binding
+  stays 10/64 with MPO projector. Self/sham accuracies unchanged, raw self score
+  differences zero, every swap restored bit-exactly. No material bidirectional
+  projector sufficiency established. Small effects are not proof of equivalence.
+- **Original H2 screen:** four engineering families selected by a stable shard,
+  sixteen tested layer/KV sites, seventeen conditions: 1,088 trials per endpoint.
+  Joint six-condition flip/cancellation success is zero at every site. Fifteen
+  exploratory stage routing-minus-permutation effects are zero and one is −0.125.
+  No site earns confirmation. Discovery families have baseline measurements but
+  no intervention measurements yet; a new operation needs a prespecified screen,
+  not repeated site fishing.
+- **Task-query handoff:** four engineering families, two query directions,
+  four independent groups and seven conditions: 224 diagnostic rows per stage.
+  No role-specific rescue. Conditions use an explicitly recorded open assistant
+  turn rather than the original answer prefix; donors have no answer response.
+- **Earlier rows:** four families, traversal/destination/final-prefix rows,
+  two groups and nine conditions: 432 rows per stage. Actual word-end token
+  prefixes and self-score parity validated. Scores change slightly but no answer
+  prediction changes; this is a bounded null, not proof of absence everywhere.
+- **Distributed handoff:** all eight KV groups jointly at prespecified layer 24,
+  four families, two directions and seven conditions: 56 rows per stage plus
+  seven patched greedy audits. No rescue or wrong-role color recombination.
+  Candidate scores change, but every audited generation returns the same wrong
+  blue destination answer. Joint patching does not establish synergy or necessity.
+- **Earlier-stage alternative:** new SFT discovery baselines complete at both
+  sizes, 480 trials each. 2B SFT binding 27/320; 8B SFT 39/320. SFT→MPO binding
+  changes +0.625 points [−0.9375, +2.1875] and +1.5625 [−0.3125, +3.4375].
+  This exploratory extension also does not establish a material binding gain.
+
+Total manifest-published work is now **5,128 trials** (six discovery baselines,
+generation audits, two original routing screens). Separately there are **3,024
+new diagnostic rows** plus the earlier 96 answer-case rows, and 14 patched greedy
+audits. Neither those counts nor a failed explanation is a publication guarantee.
+All 60 pilot-validation and 200 confirmation families remain untouched.
+
+The [working manuscript](PAPER_DRAFT.md) includes the verified evidence and missing
+causal ledger. It is **not submission-ready**: no supported selective weight →
+operation → answer mechanism, untouched confirmation, independent transfer or
+cleared methods-level novelty exists yet. The next defensible research direction
+is selection-to-attribute composition/anchor interference, with response-policy
+and donor-copy explanations controlled—not a claim that GSPO improved grounding.
+
+Follow-up toolkit regression receipt: **933 tests passed**, zero failures/errors/
+skips. Drive snapshots include diagnostic source, exact images, published records,
+metadata and reports; verification is at each acknowledged snapshot boundary.
