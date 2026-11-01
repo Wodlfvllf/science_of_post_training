@@ -169,7 +169,13 @@ def main():
 
         conditions, source_meta, swaps = ["native"], None, []
         if args.mode == "projector":
-            from vlm_projector_diagnostic import ProjectorSwap, load_projector
+            import importlib.util
+
+            helper = Path(__file__).with_name("vlm_projector_diagnostic.py")
+            module_spec = importlib.util.spec_from_file_location("projector_followup_helper", helper)
+            module = importlib.util.module_from_spec(module_spec)
+            module_spec.loader.exec_module(module)
+            ProjectorSwap, load_projector = module.ProjectorSwap, module.load_projector
 
             counterpart = checkpoint_for(plan, args.source_checkpoint)
             if counterpart.family != checkpoint.family or counterpart.stage == checkpoint.stage:
