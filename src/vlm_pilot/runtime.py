@@ -20,6 +20,7 @@ import time
 from dataclasses import dataclass, replace
 from importlib.metadata import version
 from pathlib import Path
+from uuid import UUID
 
 import numpy as np
 import torch
@@ -137,6 +138,7 @@ def runtime_profile(device) -> dict:
     if device.type == "cuda":
         properties = torch.cuda.get_device_properties(device)
         result.update(gpu=properties.name, total_memory=properties.total_memory,
+                      gpu_uuid=gpu_identifier(device),
                       capability=list(torch.cuda.get_device_capability(device)),
                       tf32_matmul=torch.backends.cuda.matmul.allow_tf32,
                       tf32_cudnn=torch.backends.cudnn.allow_tf32,
@@ -145,15 +147,85 @@ def runtime_profile(device) -> dict:
     return result
 
 
+def _normalize_gpu_uuid(value) -> str:
+    """Normalize full CUDA UUIDs, including PyTorch's _CUuuid object.
+
+    Current PyTorch exposes a wrapper whose ``bytes`` property is sixteen uint8s
+    and whose str() is a UUID. Never infer a physical GPU from a logical ordinal,
+    CUDA_VISIBLE_DEVICES, model name, arbitrary repr or a truncated identifier.
+    """
+    original_type = type(value).__name__
+    prefix = "GPU-"
+    try:
+        if not isinstance(value, (str, bytes, bytearray, memoryview)):
+            if value is None:
+                raise ValueError("missing UUID")
+            raw = getattr(value, "bytes", None)
+            # Pybind's std::vector<uint8_t> property is a Python list, not bytes.
+            if isinstance(raw, (list, tuple)):
+                if len(raw) != 16 or any(type(item) is not int or not 0 <= item <= 255 for item in raw):
+                    raise ValueError("invalid CUDA UUID byte vector")
+                value = bytes(raw)
+            elif isinstance(raw, (bytes, bytearray, memoryview)):
+                if len(raw) != 16:
+                    raise ValueError("invalid CUDA UUID byte buffer")
+                value = raw
+            elif raw is not None:
+                raise ValueError("unsupported CUDA UUID bytes property")
+            else:
+                value = str(value)
+        if isinstance(value, (bytes, bytearray, memoryview)):
+            raw = bytes(value)
+            if len(raw) == 16:
+                identifier = UUID(bytes=raw)
+            else:
+                value = raw.decode("ascii")
+                identifier = None
+        else:
+            identifier = None
+        if identifier is None:
+            text = value.strip()
+            if text.startswith(("GPU-", "MIG-")):
+                prefix, text = text[:4], text[4:]
+            if re.fullmatch(r"[0-9a-fA-F]{32}|[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}", text) is None:
+                raise ValueError("not a complete GPU UUID")
+            identifier = UUID(text)
+        if identifier.int == 0:
+            raise ValueError("zero/uninitialized UUID")
+        return prefix + str(identifier)
+    except (TypeError, ValueError, AttributeError, OverflowError) as error:
+        raise PilotError("Cannot identify the selected logical GPU UUID "
+                         f"(representation: {original_type}); verify CUDA visibility. "
+                         "No GPU ordinal fallback or occupancy bypass is allowed.") from error
+
+
 def gpu_identifier(device) -> str:
-    """Use the logical CUDA device's UUID, not an assumed nvidia-smi ordinal."""
+    """Use the actual logical CUDA device's UUID, not an assumed nvidia-smi ordinal."""
     properties = torch.cuda.get_device_properties(device)
-    value = getattr(properties, "uuid", None)
-    if isinstance(value, bytes):
-        value = value.decode("ascii")
-    if isinstance(value, str) and re.fullmatch(r"[A-Za-z0-9-]+", value):
-        return value if value.startswith(("GPU-", "MIG-")) else "GPU-" + value
-    raise PilotError("Cannot identify the selected logical GPU UUID; verify CUDA visibility.")
+    return _normalize_gpu_uuid(getattr(properties, "uuid", None))
+
+
+def verify_idle_gpu(device) -> str:
+    """Fail closed on missing/invalid GPU identity or a busy/unqueryable GPU."""
+    executable = shutil.which("nvidia-smi")
+    if executable is None:
+        raise PilotError("Cannot check GPU occupancy: nvidia-smi is missing.")
+    identifier = gpu_identifier(device)
+    try:
+        processes = subprocess.run([executable, "-i", identifier,
+            "--query-compute-apps=pid", "--format=csv,noheader,nounits"],
+            capture_output=True, text=True, timeout=15, check=False)
+    except (OSError, subprocess.TimeoutExpired) as error:
+        raise PilotError("Cannot verify selected GPU occupancy; inspect it before running.") from error
+    if processes.returncode != 0:
+        raise PilotError("Cannot verify selected GPU occupancy; inspect it before running.")
+    pids = [line.strip() for line in processes.stdout.splitlines() if line.strip()]
+    if any(re.fullmatch(r"[1-9][0-9]*", pid) is None for pid in pids):
+        raise PilotError("GPU process query returned unrecognized output; occupancy is unverified.")
+    if any(pid != str(os.getpid()) for pid in pids):
+        raise PilotError("Selected GPU has another compute process. Choose a free cuda:N; "
+                         "the active maths/repair worker will not be interrupted.")
+    return identifier
 
 
 def _weight_files(checkpoint, allow_downloads) -> list[dict]:
@@ -204,18 +276,7 @@ class Engine:
         if self.device.type == "cuda" and not torch.cuda.is_available():
             raise PilotError("CUDA was explicitly selected but is unavailable; no CPU fallback.")
         if self.device.type == "cuda":
-            executable = shutil.which("nvidia-smi")
-            if executable is None:
-                raise PilotError("Cannot check GPU occupancy: nvidia-smi is missing.")
-            processes = subprocess.run([executable, "-i", gpu_identifier(self.device),
-                "--query-compute-apps=pid", "--format=csv,noheader,nounits"],
-                capture_output=True, text=True, timeout=15, check=False)
-            if processes.returncode != 0:
-                raise PilotError("Cannot verify selected GPU occupancy; inspect it before running.")
-            pids = [line.strip() for line in processes.stdout.splitlines() if line.strip()]
-            if any(pid != str(os.getpid()) for pid in pids):
-                raise PilotError("Selected GPU has another compute process. Choose a free cuda:N; "
-                                 "the active maths/repair worker will not be interrupted.")
+            verify_idle_gpu(self.device)
         if checkpoint.backend == "fixture" and self.device.type != "cpu":
             raise PilotError("The meaningless random fixture is CPU-only.")
         self.dtype = getattr(torch, inference.dtype)

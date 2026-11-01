@@ -104,6 +104,33 @@ Outputs are no-clobber. Changed science requires a new plan, never edited metada
 
 ## 3. P0 and H1 baseline
 
+### Retry after the CUDA UUID compatibility error
+
+If P0 stopped with **“Cannot identify the selected logical GPU UUID”**, it failed
+before model loading. PyTorch can expose UUIDs as `_CUuuid` objects rather than
+strings. The runtime now normalizes their actual sixteen-byte UUID and still
+queries that GPU's compute processes. It never guesses an ordinal or bypasses
+the occupied-GPU guard.
+
+Because this runtime fix changes the pilot source hash, the original plan cannot
+be used for new model work. **Do not edit its hash, delete it, regenerate images
+or reinstall CUDA packages.** After the failed worker is no longer active:
+
+1. Update the remote checkout with `git pull --ff-only`.
+2. In marimo select **prepare**, mode **pilot**, set **Plan** to
+	`runs/vlm-pilot/plan-gpu-uuid.json`, leave **Output** blank, and leave model
+	downloads unchecked. Submit and launch once. Existing data are verified and
+	reused; a new source-pinned plan is written without replacing the old plan.
+3. Select **preflight**, checkpoint **2b-mpo**, a free **cuda:N**, enable model
+	downloads, and **keep the new Plan field unchanged**. Submit and launch once.
+4. Wait for `passed: true` and worker exit code `0`. Do not run a long baseline
+	while GPU identity or numerical preflight is unverified.
+
+Keep using that new plan for subsequent actions. If that plan path already exists
+from an earlier source version, choose another new plan path; never overwrite it.
+Archived old fixture results remain readable, but source changes prevent executing
+new trials under their old plans. The original maths/repair source is unaffected.
+
 Start bounded, inspect timing/raw results, then repeat without the trial budget:
 
 ```bash
