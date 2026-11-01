@@ -240,21 +240,18 @@ def _weight_files(checkpoint, allow_downloads) -> list[dict]:
         with path.open("rb") as handle:
             while chunk := handle.read(8 * 1024**2):
                 checksum.update(chunk)
-        result.append({"name": name, "size_bytes": size, "sha256": checksum.hexdigest()})
+        result.append({"name": name, "size_bytes": size, "sha256": checksum.hexdigest(),
+                   "layout": source.layout})
     return result
 
 
 def _tokenizer_assets(checkpoint, allow_downloads) -> dict:
     """Bind merges, added tokens and processor/template assets, not vocabulary alone."""
-    from huggingface_hub import hf_hub_download
-
     from .weights import SafetensorSource
 
     source = SafetensorSource(checkpoint.model_id, checkpoint.revision, allow_downloads)
-    index_file = Path(hf_hub_download(checkpoint.model_id, "config.json", revision=checkpoint.revision,
-                                    local_files_only=not allow_downloads))
-    result = {"config.json": digest(index_file.read_bytes())}
-    for name in ("tokenizer_config.json", "vocab.json", "merges.txt", "added_tokens.json",
+    result = {}
+    for name in ("config.json", "tokenizer_config.json", "vocab.json", "merges.txt", "added_tokens.json",
                  "special_tokens_map.json", "conversation.py", "configuration_internvl_chat.py",
                  "configuration_intern_vit.py"):
         file = source._download(name)

@@ -131,6 +131,33 @@ from an earlier source version, choose another new plan path; never overwrite it
 Archived old fixture results remain readable, but source changes prevent executing
 new trials under their old plans. The original maths/repair source is unaffected.
 
+### Retry after the single-file checkpoint asset error
+
+At the pinned revisions, **all four 2B checkpoints contain one safetensors file**;
+the four 8B checkpoints use a shard index. The provenance/tensor reader now
+supports both, reading a bounded single-file header without loading a second
+model. It still requires full revisions, checksums, bounded files/tensors and
+safe shard paths. Transport/authentication failures or corrupt indices cannot
+silently select another layout or revision.
+
+If the old reader produced `EntryNotFoundError` immediately after model loading:
+
+1. Let the failed worker exit, then update the remote checkout with
+	`git pull --ff-only`.
+2. Submit **prepare**, mode **pilot**, **Plan** set to
+	`runs/vlm-pilot/plan-loader-v2.json`, **Output** blank, model downloads unchecked.
+	This verifies/reuses the existing images and creates a new source-pinned plan.
+	Keep old plans and cached weights; do not edit their hashes or reinstall setup.
+3. Submit **preflight** for **2b-mpo** on a free **cuda:N**, keeping that new Plan
+	path, enabling model downloads and leaving Output blank. Cached weights are
+	reused when available at the pinned revision. No baseline starts automatically.
+
+The `torch_dtype` deprecation warning is not a numerical failure. Native code may
+print **“FlashAttention2 is not installed.”** That is not a requirement to install
+it: this pilot explicitly selects **eager attention** with `use_flash_attn=False`.
+Require the actual P0 `passed: true` / worker exit code `0` before research trials.
+An asset-load failure establishes neither numerical parity nor a hypothesis result.
+
 Start bounded, inspect timing/raw results, then repeat without the trial budget:
 
 ```bash

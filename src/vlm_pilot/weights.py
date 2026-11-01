@@ -35,6 +35,7 @@ import torch
 from torch import Tensor, nn
 
 from .attention import Capture, Site, _finite, _index, _replay_qk, _resolve_attention, _rms
+from .schemas import PilotError
 
 __all__ = [
     "WeightSource", "MappingTensorSource", "SafetensorSource", "WeightSwap",
@@ -117,12 +118,15 @@ class MappingTensorSource:
 
 
 class SafetensorSource:
-    """Lazy indexed HF checkpoint reads at a full 40-hex commit revision.
+    """Lazy single-file or indexed HF reads at a full 40-hex commit revision.
 
     Only the requested full tensor is materialized with safe_open. Limits are
     enforced on index bytes, shard bytes, index entries, total declared bytes,
     and header shape BEFORE get_tensor. HF cache symlinks are accepted, but
     index-provided shard names must be safe basenames, never paths/URLs.
+    Single-file maps come from the actual safetensors header, not a guessed list.
+    Remote absence and local-only cache misses are distinct; transport/auth errors
+    or corrupt indices never trigger a different checkpoint-layout fallback.
     """
 
     MAX_INDEX_BYTES = 16 * 1024**2
@@ -142,6 +146,7 @@ class SafetensorSource:
             raise ValueError("allow_downloads must be an explicit boolean")
         self._repo_id, self._revision, self._allow_downloads = repo_id, revision, allow_downloads
         self._weight_map: dict[str, str] | None = None
+        self._layout: str | None = None
 
     @property
     def repo_id(self) -> str:
@@ -155,13 +160,29 @@ class SafetensorSource:
     def allow_downloads(self) -> bool:
         return self._allow_downloads
 
-    def _download(self, filename: str) -> Path:
-        from huggingface_hub import hf_hub_download
+    @property
+    def layout(self) -> str | None:
+        return self._layout
 
-        return Path(hf_hub_download(
-            repo_id=self.repo_id, filename=filename, revision=self.revision,
-            repo_type="model", local_files_only=not self.allow_downloads,
-        ))
+    def _download(self, filename: str, *, probe: bool = False) -> Path:
+        from huggingface_hub import hf_hub_download
+        from huggingface_hub.errors import EntryNotFoundError
+
+        try:
+            return Path(hf_hub_download(
+                repo_id=self.repo_id, filename=filename, revision=self.revision,
+                repo_type="model", local_files_only=not self.allow_downloads,
+            ))
+        except EntryNotFoundError as error:
+            if probe:
+                raise
+            raise PilotError(f"Pinned checkpoint asset unavailable: {filename} "
+                             f"({type(error).__name__}). Check the exact revision/cache; "
+                             "downloads are opt-in. No moving-revision fallback.") from None
+        except Exception as error:
+            raise PilotError(f"Pinned checkpoint asset lookup failed: {filename} "
+                             f"({type(error).__name__}). No checkpoint-layout fallback "
+                             "on a transport or authentication failure.") from None
 
     @staticmethod
     def _file_size(path: Path, cap: int, description: str) -> int:
@@ -185,10 +206,53 @@ class SafetensorSource:
     def _reject_constant(value: str) -> None:
         raise ValueError(f"nonfinite checkpoint index number: {value}")
 
+    def _single_file_map(self) -> dict[str, str]:
+        """Read only a bounded header; never load all tensors or a pickle model."""
+        from safetensors import safe_open
+
+        name = "model.safetensors"
+        path = self._download(name)
+        size = self._file_size(path, min(self.MAX_SHARD_BYTES, self.MAX_MODEL_BYTES), name)
+        with path.open("rb") as handle:
+            prefix = handle.read(8)
+        if len(prefix) != 8:
+            raise ValueError("single safetensors file has an incomplete header prefix")
+        header_bytes = int.from_bytes(prefix, "little")
+        if not 2 <= header_bytes <= self.MAX_INDEX_BYTES or header_bytes > size - 8:
+            raise ValueError("single safetensors header is invalid or exceeds its size cap")
+        with safe_open(str(path), framework="pt", device="cpu") as handle:
+            names = handle.keys()
+            if not 1 <= len(names) <= self.MAX_INDEX_ENTRIES:
+                raise ValueError("single safetensors header has no tensors or exceeds its entry cap")
+            if any(not isinstance(key, str) or not key or len(key) > 512 for key in names):
+                raise ValueError("single safetensors header has an invalid tensor name")
+            mapping = dict.fromkeys(names, name)
+        self._layout, self._weight_map = "single_file", mapping
+        return mapping
+
     def _load_index(self) -> dict[str, str]:
+        """Resolve the pinned layout; absence of an index is valid for 1B/2B."""
         if self._weight_map is not None:
             return self._weight_map
-        path = self._download("model.safetensors.index.json")
+        from huggingface_hub.errors import EntryNotFoundError, LocalEntryNotFoundError
+
+        single_file = False
+        try:
+            path = self._download("model.safetensors.index.json", probe=True)
+        except LocalEntryNotFoundError:
+            if self.allow_downloads:
+                # A failed online HEAD with no cached file is not proof of remote absence.
+                raise PilotError("Shard-index network/cache lookup failed; cannot infer checkpoint "
+                                 "layout from this local cache miss. Retry when the Hub is reachable.") from None
+            # Offline: accept only an actually cached, complete file at the SAME revision.
+            single_file = True
+        except EntryNotFoundError:
+            # Confirmed remote file-not-found: the checkpoint may legitimately be unsharded.
+            single_file = True
+        if single_file:
+            # Leave the exception context before opening a header; a corrupt local file
+            # must not chain an underlying signed-URL/request error into a notebook traceback.
+            return self._single_file_map()
         self._file_size(path, self.MAX_INDEX_BYTES, "safetensors index")
         # A bounded read also protects against file growth between stat and read.
         with path.open("rb") as handle:
@@ -219,6 +283,7 @@ class SafetensorSource:
         if total is not None and (type(total) is not int or not 0 < total <= self.MAX_MODEL_BYTES):
             raise ValueError("safetensors index total_size is invalid or exceeds its size cap")
         self._weight_map = dict(weights)
+        self._layout = "sharded"
         return self._weight_map
 
     def read_tensor(self, name: str) -> Tensor:
