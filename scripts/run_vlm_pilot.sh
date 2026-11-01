@@ -15,7 +15,8 @@ if [[ "${1:-}" == "setup" ]]; then
   if [[ -n "${TORCH_INDEX_URL:-}" ]]; then
     "$ENV_DIR/bin/python" -m pip install torch torchvision --index-url "$TORCH_INDEX_URL"
   fi
-  "$ENV_DIR/bin/python" -m pip install -e '.[vlm,dev]'
+  # The smoke suite imports the marimo entry notebook in this isolated interpreter.
+  "$ENV_DIR/bin/python" -m pip install -e '.[vlm,notebooks,dev]'
   "$ENV_DIR/bin/python" -m pip check
   printf '%s\n' 'Separate VLM environment installed. No models downloaded or workers started.'
   exit 0

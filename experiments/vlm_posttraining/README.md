@@ -64,7 +64,9 @@ bash scripts/run_vlm_pilot.sh setup
 bash scripts/run_vlm_pilot.sh smoke
 ```
 
-Setup creates **.venv-vlm**, installs `vlm,dev` and checks dependencies. It does not
+Setup creates **.venv-vlm**, installs `vlm,notebooks,dev` and checks dependencies.
+The notebook extra is required because smoke imports the entry notebook using
+this isolated interpreter, not the already running marimo kernel. Setup does not
 modify the text environment, download models or start GPU workers. Use
 `PYTHON_BOOTSTRAP` / `VLM_ENV_DIR` if necessary. Set `TORCH_INDEX_URL` to the
 platform-supported public CUDA wheel index if required. Installation alone is not

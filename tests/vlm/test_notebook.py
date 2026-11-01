@@ -174,3 +174,14 @@ def test_notebook_import_does_not_import_pilot_runtime_or_launch(monkeypatch):
     spec.loader.exec_module(module)
     assert hasattr(module, "app")
     assert "vlm_pilot.runtime" not in set(sys.modules) - before
+
+
+def test_isolated_setup_includes_notebook_dependencies_for_smoke():
+    import tomllib
+
+    root = HELPER.parent.parent
+    script = (root / "scripts" / "run_vlm_pilot.sh").read_text()
+    assert "pip install -e '.[vlm,notebooks,dev]'" in script
+    with (root / "pyproject.toml").open("rb") as handle:
+        dependencies = tomllib.load(handle)["project"]["optional-dependencies"]["notebooks"]
+    assert any(item.startswith("marimo") for item in dependencies)
