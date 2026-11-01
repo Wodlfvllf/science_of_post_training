@@ -315,6 +315,8 @@ def capture(root, destination, *, include_logs=False):
 
         patterns = ("src/vlm_pilot/*.py", "configs/vlm/*.yaml", "notebooks/vlm_pilot.py",
                     "scripts/backup_vlm.py", "scripts/vlm_notebook.py", "scripts/run_vlm_pilot.sh",
+                    "scripts/vlm_projector_diagnostic.py", "scripts/vlm_research_followup.py",
+                    "runs/vlm-pilot/report-*/metadata.json",
                     "experiments/vlm_posttraining/*.md", "README.md", "RESEARCH_PLAN.md",
                     "pyproject.toml", "requirements-tested.txt", "plan-loader-v2.json", "plan-gpu-uuid.json")
         for pattern in patterns:
