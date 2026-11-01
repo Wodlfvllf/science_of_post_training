@@ -187,6 +187,9 @@ def memory_fit(checkpoint, inference, device):
     if host < cpu_required:
         raise RuntimeError("Insufficient available host RAM for the explicit diagnostic estimate.")
     if device.startswith("cuda:"):
+        import shutil
+        import subprocess
+
         import torch
 
         from vlm_pilot.runtime import verify_idle_gpu
@@ -195,7 +198,17 @@ def memory_fit(checkpoint, inference, device):
             raise RuntimeError("CUDA is unavailable or fixture is CPU-only; no fallback.")
         selected = torch.device(device)
         result["gpu_uuid"] = verify_idle_gpu(selected)
-        free, total = torch.cuda.mem_get_info(selected)
+        # CUDA mem_get_info creates a context. In a PID namespace nvidia-smi may
+        # report its host PID, which the later guard correctly treats as another
+        # process. Query the exact GPU through nvidia-smi before Engine creates
+        # its context; do not weaken the occupancy guard or guess a PID alias.
+        memory = subprocess.run([shutil.which("nvidia-smi"), "-i", result["gpu_uuid"],
+                                 "--query-gpu=memory.free,memory.total", "--format=csv,noheader,nounits"],
+                                check=True, capture_output=True, text=True, timeout=15)
+        match = re.fullmatch(r"\s*([0-9]+)\s*,\s*([0-9]+)\s*", memory.stdout)
+        if match is None:
+            raise RuntimeError("GPU memory query returned an unrecognized response")
+        free, total = (int(v) * 1024**2 for v in match.groups())
         required = weight_bytes + workspace
         result.update(gpu_free_bytes=free, gpu_total_bytes=total,
                       gpu_required_estimate_bytes=required)

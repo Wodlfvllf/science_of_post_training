@@ -306,3 +306,30 @@ def test_cpu_memory_fit_estimate_is_explicit_and_fails_closed(monkeypatch):
     monkeypatch.setattr(handoff, "_available_host_bytes", lambda: 1)
     with pytest.raises(RuntimeError, match="host RAM"):
         handoff.memory_fit(checkpoint, inference, "cpu")
+
+
+def test_gpu_fit_does_not_create_cuda_context_before_engine(monkeypatch):
+    import shutil
+    import subprocess
+
+    import torch
+
+    import vlm_pilot.runtime as runtime
+
+    monkeypatch.setattr(handoff, "_available_host_bytes", lambda: 128 * 1024**3)
+    monkeypatch.setattr(torch.cuda, "is_available", lambda: True)
+    monkeypatch.setattr(runtime, "verify_idle_gpu", lambda device: "GPU-test-exact")
+    monkeypatch.setattr(shutil, "which", lambda name: "/usr/bin/nvidia-smi")
+    def no_context(*args):
+        pytest.fail("CUDA context must not be created by memory_fit")
+    monkeypatch.setattr(torch.cuda, "mem_get_info", no_context)
+    calls = []
+    def query(command, **kwargs):
+        calls.append(command)
+        return SimpleNamespace(stdout="90000, 97280\n")
+    monkeypatch.setattr(subprocess, "run", query)
+    checkpoint = SimpleNamespace(family="8b", backend="internvl")
+    inference = SimpleNamespace(dtype="float32", max_context_tokens=1024)
+    fit = handoff.memory_fit(checkpoint, inference, "cuda:0")
+    assert fit["gpu_free_bytes"] == 90000 * 1024**2
+    assert calls[0][2] == "GPU-test-exact"
