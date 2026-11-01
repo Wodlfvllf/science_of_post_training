@@ -8,6 +8,10 @@ The original maths/repair Python source and fingerprints are unchanged. This
 package has its own plan/source identity and standalone `interp-vlm` /
 `python -m vlm_pilot` command. Do not update source beneath an active locked run.
 
+The [real-model pilot findings](PILOT_FINDINGS.md) record the executed 2B/8B
+MPO/GSPO baselines, engineering audits, actual projector differences and the
+decision to hold mechanism confirmation. Completed execution is not an H1/H2/H3 pass.
+
 ## Implemented scope
 
 | Hypothesis | Executable evidence |
@@ -189,7 +193,9 @@ bash scripts/run_vlm_pilot.sh run runs/vlm-pilot/plan.json --checkpoint 2b-mpo -
 Every run repeats and saves P0: native vision/embedding equivalence, capture-only,
 self-Q/K parity, finite logits, argmax equality, declared tolerances, selected-site
 reconstruction and multi-token candidate-prefix checks. Failure blocks trials;
-do not silently loosen tolerances. Real GPU peak fit and throughput remain untested.
+do not silently loosen tolerances. The observed remote pilot profile is recorded
+in the findings; larger contexts/tiles, training and untested sites still need
+their own numerical and memory gates.
 
 One-command sequential discovery baselines for both MPO/final pairs:
 
