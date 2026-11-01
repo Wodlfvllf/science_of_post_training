@@ -55,6 +55,27 @@ trials explicitly. Only one notebook-owned action runs at a time; the separate
 GPU occupancy guard still protects other inference workers. No Drive backup is
 implied. The notebook and CLI below use the same analysis; inspection cannot execute models.
 
+### Explicit Google Drive snapshots
+
+The independent [backup helper](../../scripts/backup_vlm.py) accepts an already
+authenticated notebook filesystem such as `GoogleDriveFileSystem`. Importing it
+does nothing. Create `VLMDriveBackup(fs, repo_root,
+"science-of-post-training-backups/vlm-posttraining", interval=300)`, explicitly
+call `once()`, and require `status["state"] == "verified"` before calling `start()`.
+Keep one instance per live kernel; `stop()` signals only the backup thread.
+
+Each unique ZIP preserves all manifest-published VLM records and referenced
+captures at exact captured boundaries, the original dataset/PNG bytes, plans,
+source/configuration and reports. `BACKUP.json` inventories member hashes/sizes.
+Weights, environments, caches, Git metadata, credentials and unrelated studies
+are excluded; logs are excluded by default. The helper uploads the ZIP, reads
+every byte back to check its size/SHA256, then writes and reads a checksum receipt.
+No remote snapshot is deleted. Bounds fail closed (2 GiB payload, 64 MiB/member,
+30,000 members); reduce capture scope or deliberately revise the backup design
+before exceeding them. A verified snapshot is durable at that boundary only.
+Periodic uploads require the notebook kernel and Drive connection to stay alive;
+container deletion can lose everything since the last verified snapshot.
+
 ## 1. Separate remote environment
 
 From the repository root on the remote machine:
