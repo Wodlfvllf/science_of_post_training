@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "kind": "c2_development_replication_v1",
+  "plan_id": "44f4c5dbae51af518f044c735dc96ae8f6b043cb3c7ca70bd0512fb3cf9fc050",
+  "dataset_sha256": "cb93e6e3e4034750252ebce2d1d995e59c537f8a6bf6de1fc963b69b0e2e3de5",
+  "split": "engineering",
+  "family_offset": 4,
+  "family_count": 20,
+  "excluded_family_indices": [0, 1, 2, 3],
+  "factors": {"edge": 1, "palette": 0, "directions": [1, -1]},
+  "budgets": {"original": 32, "direct_budget64": 64, "composed_one_turn64": 64, "wasted_call_repeat32": 32, "selectorless_fixedcue32": 32},
+  "checkpoints": ["8b-mpo", "8b-gspo"],
+  "primary": "primary_chain_minus_direct_8b_gspo",
+  "inference": "original_unchanged",
+  "selectorless_rule": "SHAPES[(family.index+direction_sign)%len(SHAPES)]",
+  "scope": "development_replication_not_confirmation",
+  "prohibited": ["cpt", "probes", "training", "pilot_validation", "confirmation"]
+}

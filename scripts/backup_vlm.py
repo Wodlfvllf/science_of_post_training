@@ -320,6 +320,7 @@ def capture(root, destination, *, include_logs=False):
                     "scripts/vlm_earlier_routing_diagnostic.py", "scripts/vlm_joint_handoff_diagnostic.py",
                     "scripts/vlm_text_state_diagnostic.py",
                     "scripts/vlm_generated_decomposition.py",
+                    "scripts/vlm_decomposition_replication.py", "configs/vlm/c2-development.json",
                     "runs/vlm-pilot/report-*/metadata.json",
                     "experiments/vlm_posttraining/*.md", "README.md", "RESEARCH_PLAN.md",
                     "pyproject.toml", "requirements-tested.txt", "plan-loader-v2.json", "plan-gpu-uuid.json")
