@@ -92,6 +92,10 @@ container deletion can lose everything since the last verified snapshot.
 
 ## 1. Separate remote environment
 
+After sandbox deletion, use the [VLM recovery procedure](RECOVERY.md) before
+preparing data or running a model. Do not regenerate the original scenes/plans
+or count historical snapshots repeatedly as new evidence.
+
 From the repository root on the remote machine:
 
 ```bash

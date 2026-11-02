@@ -92,6 +92,12 @@ hypothesis and not a zero result. Before resuming on a new live runtime:
 The new source is outside the locked science package. No source-hash bypass,
 confirmation opening, answer-supplied donor, or automatic re-execution is allowed.
 
+**Recovery update, 2 November:** the newest receipt-paired Drive archive was
+fully verified and restored without overwriting checkout source/notebook files.
+It contains both complete C1 reports (384 rows and six audits per endpoint),
+so C1 was not lost and was not rerun. Raw C1 margin/response interpretation is
+still a separate analysis requirement; integrity verification does not supply it.
+
 ## C2: The direct-answer task is compositionally underspecified
 
 If C1 is unsupported, test a **model-generated**, not gold-supplied, decomposition
@@ -108,6 +114,39 @@ does not fall back to the highest-scored candidate. Its wrong-selector control
 cues the next entry in the fixed shape vocabulary relative to the **prediction**,
 not relative to the oracle target. That cue can accidentally equal the true
 destination; report this explicitly rather than calling every control incorrect.
+
+### C2 recovered-runtime engineering screen · 2 November
+
+No C2 output was present in the recovered snapshot. The previously unverified
+launch was therefore not counted, and two new, separate detached jobs were run
+after fresh numerical preflight. Both completed four engineering families, both
+directions, with all eight scheduled cases retained in every stage denominator.
+No previously completed baseline or C1 condition was rerun.
+
+| Checkpoint | Direct delivered color | Correct generated shape | Generated-shape color chain | Shifted-prediction cue chain | Invalid generated shape |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 8B MPO | 2/8 | 5/8 | 5/8 | 2/8 | 0/8 |
+| 8B GSPO | 2/8 | 5/8 | 4/8 | 1/8 | 1/8 |
+
+Every actual chain prompt was checked against that case's own parsed generated
+shape; the shifted cue was checked against the fixed vocabulary rule. There was
+no supplied correct shape or best-candidate fallback. The GSPO counts include
+an invalid shape response and an invalid color-chain delivery; invalid delivery
+is not a claim that the substantive reasoning was necessarily wrong. Raw text,
+tokens, finish reasons and skipped stages are retained. The control sometimes
+accidentally cues the correct destination after an incorrect shape prediction.
+
+This is a **small behavioral lead for an alternate generated trajectory**, not
+an explanation of the original direct-answer forward, a causal internal mediator,
+or a GSPO improvement. Its four source families overlap earlier engineering work;
+no untouched replication or equivalence claim is warranted. Freeze the wording,
+budgets, strict delivery grading, wrong-cue rule and family-level paired analysis
+before testing additional development families or any confirmation outcome.
+
+The recovered runtime uses Torch 2.15.0 / CUDA 13.2 rather than the historical
+Torch 2.14.1 / CUDA 13.0. Both new endpoints share the new runtime and passed fresh
+FP32/eager native/capture/self checks without tolerance changes. They are new
+diagnostic outputs, not resumed old trials or mixed-runtime historical estimates.
 
 ## C3: Selection interference depends on anchor or representation
 
