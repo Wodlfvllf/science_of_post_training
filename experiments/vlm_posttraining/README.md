@@ -11,6 +11,9 @@ package has its own plan/source identity and standalone `interp-vlm` /
 The [real-model pilot findings](PILOT_FINDINGS.md) record the executed 2B/8B
 MPO/GSPO baselines, engineering audits, actual projector differences and the
 decision to hold mechanism confirmation. Completed execution is not an H1/H2/H3 pass.
+The [counter-hypothesis ledger](COUNTER_HYPOTHESES.md) records the subsequent
+text-residual screen, the pending generated-selector test and the sandbox
+termination boundary. Neither manuscript nor confirmation is complete.
 
 ## Implemented scope
 
@@ -58,6 +61,13 @@ dead worker are marked unacknowledged rather than successful. Resume published
 trials explicitly. Only one notebook-owned action runs at a time; the separate
 GPU occupancy guard still protects other inference workers. No Drive backup is
 implied. The notebook and CLI below use the same analysis; inspection cannot execute models.
+
+For the bounded follow-up tests, the explicit **counter-hypothesis** action adds
+**generated-decomposition** and **text-state** dispatches to the same detached
+worker. Select **pilot**, **engineering**, cached **8b-mpo/8b-gspo** and 1–4 source
+families. These counts are not the ordinary new-trial budget. Downloads and
+validation/confirmation are rejected. Diagnostic outputs are no-clobber and do
+not automatically resume: inspect saved files after any interruption first.
 
 ### Explicit Google Drive snapshots
 

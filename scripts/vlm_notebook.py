@@ -187,6 +187,30 @@ class NotebookPilot:
         checkpoint = settings["checkpoint"]
         if re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,63}", checkpoint) is None:
             raise ValueError("Invalid checkpoint name.")
+        if action == "counter-hypothesis":
+            diagnostic = settings.get("diagnostic", "generated-decomposition")
+            scripts = {"generated-decomposition": "vlm_generated_decomposition.py",
+                       "text-state": "vlm_text_state_diagnostic.py"}
+            if (mode != "pilot" or checkpoint not in ("8b-mpo", "8b-gspo")
+                    or diagnostic not in scripts or settings.get("split") != "engineering"):
+                raise ValueError("Counter-hypotheses require pilot, 8b-mpo/8b-gspo and engineering only.")
+            if settings.get("allow_downloads", False):
+                raise ValueError("Counter-hypotheses use cached pinned models only; disable downloads.")
+            count = settings.get("diagnostic_families", 4)
+            if type(count) is not int or not 1 <= count <= 4:
+                raise ValueError("Counter-hypothesis family count must be an integer from 1 to 4.")
+            script = self._path("scripts/" + scripts[diagnostic])
+            if not script.is_file():
+                raise ValueError("Update the operational diagnostic scripts before launch.")
+            output = self._path(settings.get("output") or
+                                f"runs/vlm-pilot/report-{diagnostic}-{checkpoint}-{uuid.uuid4().hex}")
+            if output.exists():
+                raise ValueError("Diagnostic output exists; inspect it first. No overwrite or implicit resume.")
+            args = [str(self.python), str(script), "--plan", str(plan), "--checkpoint", checkpoint,
+                    "--families", str(count), "--device", settings["device"], "--output", str(output)]
+            if diagnostic == "text-state":
+                args += ["--layers", "8,16,24,32", "--rows", "task_noun,finalassistant", "--audit"]
+            return [args], env, str(output)
         if action == "audit-weights":
             after = settings.get("source_checkpoint", "").strip()
             if not after:

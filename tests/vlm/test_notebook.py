@@ -72,6 +72,31 @@ def test_no_implicit_research_or_secret_install_index(controller):
         controller.commands(settings(output="/tmp/outside-run"))
 
 
+def test_counter_hypothesis_preview_uses_detached_worker_and_engineering_only(controller):
+    for name in ("vlm_generated_decomposition.py", "vlm_text_state_diagnostic.py"):
+        (controller.repo / "scripts" / name).write_text("# inert test diagnostic")
+    research = settings(action="counter-hypothesis", mode="pilot", checkpoint="8b-mpo",
+                        split="engineering", plan="runs/vlm-smoke/plan.json", diagnostic_families=4)
+    commands, _, output = controller.commands(research)
+    assert commands[0][0] == str(controller.python)
+    assert commands[0][1].endswith("vlm_generated_decomposition.py")
+    assert commands[0][commands[0].index("--families")+1] == "4"
+    assert "--max-new-trials" not in commands[0] and "--allow-downloads" not in commands[0]
+    assert output.startswith(str(controller.repo / "runs/vlm-pilot/report-"))
+    commands, _, _ = controller.commands(dict(research, diagnostic="text-state"))
+    assert "--audit" in commands[0] and "8,16,24,32" in commands[0]
+    assert not controller.jobs.exists()  # Previews do not run inference.
+    for change in ({"split": "confirmation"}, {"mode": "smoke"}, {"checkpoint": "2b-mpo"},
+                   {"diagnostic": "arbitrary.py"}, {"diagnostic_families": True},
+                   {"diagnostic_families": 0}, {"allow_downloads": True}):
+        with pytest.raises(ValueError):
+            controller.commands(dict(research, **change))
+    existing = controller.repo / "runs/vlm-pilot/report-existing"
+    existing.mkdir(parents=True)
+    with pytest.raises(ValueError, match="inspect it first"):
+        controller.commands(dict(research, output=str(existing)))
+
+
 def test_prepare_reuses_files_and_does_not_launch(controller):
     commands, _, plan = controller.commands(settings(action="prepare"))
     assert "data" in commands[0] and "preview" in commands[1]

@@ -52,6 +52,46 @@ requires a frozen discovery replication, task/state blocking, bounded weight
 tests, and only then untouched validation/confirmation. No paper claim is earned
 by residual transplant alone.
 
+### C1 execution record and runtime boundary
+
+Both 8B endpoints returned complete engineering reports: **384 rows per endpoint**
+(four families × two directions × four layers × two rows × six conditions), with
+six patched greedy audits each. Native/capture/self gates and all pre-task
+traversal structural controls passed. No selective accuracy rescue appeared:
+shape-state substitutions at the early task-noun rows reduced forward-direction
+hits from 2/4 to 1/4 at layers 8 and 16; wrong-anchor substitutions also reduced
+them. Other isolated changes likewise did not establish the specified role-
+specific recombination. This does not reject every text-state representation or
+prove equivalence. Raw margin and generation analysis remains pending independent
+artifact recovery; no site is nominated for confirmation.
+
+The authenticated backup worker was running during C1. A verified status returned
+for the snapshot dated 1 November 15:10:12 UTC, but its captured inventory preceded
+the C1 result publication. **Do not assume the last C1 boundary is backed up**
+until a newer Drive archive and receipt are inspected. The earlier full evidence
+snapshot at 14:07:49 UTC remains separately verified.
+
+The shared sandbox subsequently returned HTTP 410, **sandbox terminated**, during
+the attempted C2 launch. C2 execution is **unverified**, not a failed scientific
+hypothesis and not a zero result. Before resuming on a new live runtime:
+
+1. Inspect storage and authenticated Drive archives/receipts, preserving the
+  newest valid boundaries and original image/plan bytes. Do not regenerate data
+  or relock merely because the environment disappeared.
+2. Verify diagnostic reports/metadata and distinguish complete C1 output from
+  partial or absent C2 output. A container reset is not a notebook disconnect.
+3. Use the explicit notebook **counter-hypothesis** action, **generated-
+  decomposition**, **pilot**, **engineering**, four families and cached
+  **8b-mpo** or **8b-gspo**. Run one checkpoint per action with a new output
+  directory after inspection. The normal consume-once launch gate dispatches a
+  detached worker with disk logs and completion receipts; refresh is read-only.
+4. Re-establish readback-verified Drive uploads before inference. Detached workers
+  survive tab disconnects, **not sandbox termination**. No code change can remove
+  that platform limit or promise continuous GPU availability.
+
+The new source is outside the locked science package. No source-hash bypass,
+confirmation opening, answer-supplied donor, or automatic re-execution is allowed.
+
 ## C2: The direct-answer task is compositionally underspecified
 
 If C1 is unsupported, test a **model-generated**, not gold-supplied, decomposition
@@ -61,6 +101,13 @@ against the same model's direct answer. Also compare a no-image/text-fact versio
 This tests an alternative computational trajectory, not latent reasoning in the
 original prompt. Oracle shape cues may be a labelled upper-bound control only,
 not a claimed rescue. Freeze wording/budgets before replication.
+
+The implemented first C2 screen fixes 32-token uncached greedy budgets and uses
+strict EOS-terminated bare shape predictions only. Failed/invalid shape delivery
+does not fall back to the highest-scored candidate. Its wrong-selector control
+cues the next entry in the fixed shape vocabulary relative to the **prediction**,
+not relative to the oracle target. That cue can accidentally equal the true
+destination; report this explicitly rather than calling every control incorrect.
 
 ## C3: Selection interference depends on anchor or representation
 

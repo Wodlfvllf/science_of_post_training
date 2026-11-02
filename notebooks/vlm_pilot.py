@@ -55,7 +55,7 @@ def _(mo):
 def _(mo):
     settings_form = mo.ui.dictionary({
         "action": mo.ui.dropdown(["setup", "smoke", "prepare", "preflight", "run", "freeze",
-                      "baseline-all", "audit-weights", "analyze"],
+                      "baseline-all", "audit-weights", "analyze", "counter-hypothesis"],
                                   value="setup", label="Explicit action"),
         "mode": mo.ui.dropdown(["smoke", "pilot"], value="smoke", label="Data/model configuration"),
         "torch_index": mo.ui.dropdown(["", "https://download.pytorch.org/whl/cu130",
@@ -67,6 +67,10 @@ def _(mo):
         "phase": mo.ui.dropdown(["baseline", "routing", "weights"], value="baseline", label="Hypothesis phase"),
         "split": mo.ui.dropdown(["engineering", "discovery", "pilot_validation", "confirmation"],
                                 value="discovery", label="Source-family split"),
+        "diagnostic": mo.ui.dropdown(["generated-decomposition", "text-state"],
+                        value="generated-decomposition", label="Counter-hypothesis (engineering only)"),
+        "diagnostic_families": mo.ui.number(start=1, stop=4, value=4, step=1,
+                           label="Counter-hypothesis source families (not new-trial budget)"),
         "device": mo.ui.text(value="cpu", label="Explicit device: cpu for fixture; free cuda:N for pilot"),
         "allow_downloads": mo.ui.checkbox(value=False, label="Explicitly permit pinned HF model downloads"),
         "sites": mo.ui.text(value="", label="Run/P0 sites: layer:KV-group pairs (discovery findings)"),
@@ -98,6 +102,7 @@ def _(mo):
 def _(ClickGate, controller, mo, settings_form, uuid4):
     mo.stop(settings_form.value is None)
     frozen_settings = dict(settings_form.value)
+    frozen_settings["diagnostic_families"] = int(frozen_settings["diagnostic_families"])
     if frozen_settings["bounded"]:
         frozen_settings["max_new_trials"] = int(frozen_settings["max_new_trials"])
     else:
