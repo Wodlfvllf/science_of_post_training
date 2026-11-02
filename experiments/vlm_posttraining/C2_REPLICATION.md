@@ -8,6 +8,11 @@ This is an external computation trajectory, **not** the native mechanism, a nove
 prompting method or a GSPO-specific improvement. Decomposition/self-ask and visual
 programming are established priors. A mechanistic contribution remains to be earned.
 
+The [critical identifiability audit](CRITICAL_AUDIT.md) distinguishes three
+computations consistent with the pilot and explains what this protocol cannot
+identify. Its proposed cue/context experiment is separate, not an amendment to
+this frozen schedule or a substitute primary outcome.
+
 ## Fixed schedule and statistics
 
 The [machine-readable protocol](../../configs/vlm/c2-development.json) binds the
