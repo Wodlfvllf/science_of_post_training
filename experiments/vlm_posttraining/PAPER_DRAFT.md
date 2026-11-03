@@ -15,6 +15,11 @@ diagnostic results remain **PENDING**, with explicit blanks in Section 5.
 
 ## Abstract
 
+**Evidence update:** the [3 November controlled development results](DEVELOPMENT_RESULTS.md)
+supersede pending status for C2 replication and cue/context tests. They show a
+chain/direct benefit but poor relational reversal competence and no supported
+GSPO-specific interaction. This remains a working draft, not a mechanism paper.
+
 **Preliminary.** We investigate whether an adjacent released post-training
 transition changes visual referent selection, rather than assuming improved
 grounding or a particular neural mechanism. A reversible single-image relation

@@ -322,6 +322,7 @@ def capture(root, destination, *, include_logs=False):
                     "scripts/vlm_generated_decomposition.py",
                     "scripts/vlm_decomposition_replication.py", "scripts/vlm_cue_context.py",
                     "scripts/analyze_vlm_decomposition_replication.py",
+                    "scripts/analyze_vlm_cue_context.py", "scripts/recover_vlm.py",
                     "configs/vlm/c2-development.json", "configs/vlm/cue-context-development.json",
                     "runs/vlm-pilot/report-*/metadata.json",
                     "experiments/vlm_posttraining/*.md", "README.md", "RESEARCH_PLAN.md",

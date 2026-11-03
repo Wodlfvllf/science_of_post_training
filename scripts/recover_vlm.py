@@ -59,6 +59,8 @@ _SCRIPTS = {
     "vlm_handoff_diagnostic.py", "vlm_earlier_routing_diagnostic.py",
     "vlm_joint_handoff_diagnostic.py", "vlm_text_state_diagnostic.py",
     "vlm_generated_decomposition.py",
+    "vlm_decomposition_replication.py", "vlm_cue_context.py",
+    "analyze_vlm_decomposition_replication.py", "analyze_vlm_cue_context.py", "recover_vlm.py",
 }
 _INVENTORY_KEYS = {
     "schema_version", "captured_at", "run_names", "completed_trials", "files",
@@ -196,7 +198,8 @@ def _allowed(name):
     if parts[0] == "notebooks":
         return len(parts) == 2 and parts[1] in {"vlm_pilot.py", "vlm_pilot.ipynb"}
     if parts[:2] == ["configs", "vlm"]:
-        return len(parts) == 3 and Path(name).suffix in {".yaml", ".yml"}
+        return len(parts) == 3 and (Path(name).suffix in {".yaml", ".yml"}
+            or parts[-1] in {"c2-development.json", "cue-context-development.json"})
     if parts[0] == "scripts":
         return len(parts) == 2 and parts[1] in _SCRIPTS
     if parts[:2] == ["experiments", "vlm_posttraining"]:

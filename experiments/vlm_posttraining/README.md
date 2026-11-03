@@ -17,6 +17,10 @@ termination boundary. Neither manuscript nor confirmation is complete.
 
 ## Implemented scope
 
+The [controlled development results](DEVELOPMENT_RESULTS.md) include the executed
+20-family C2 replication, exhaustive cue/context matrix, raw-result audits and
+the remaining scientific identification gaps.
+
 | Hypothesis | Executable evidence |
 | --- | --- |
 | H1 | Eight edge×query-direction×palette cases, cued color and arrow recognition, text-fact controls; separate optional native/common generation audits. |
