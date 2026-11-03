@@ -63,6 +63,8 @@ def saved(tmp_path):
     for path in ("records/orphan.json", "captures/orphan.safetensors", "weights/model.safetensors"):
         write(run / path, b"not published")
     for path in ("src/vlm_pilot/io.py", "scripts/vlm_notebook.py", "configs/vlm/pilot.yaml",
+                 "scripts/vlm_decomposition_replication.py", "scripts/vlm_cue_context.py",
+                 "configs/vlm/cue-context-development.json",
                  "notebooks/vlm_pilot.py", "pyproject.toml", "plan-loader-v2.json",
                  "runs/vlm-pilot/plan-gpu-uuid.json", "runs/vlm-pilot/protocol.json",
                  "runs/vlm-pilot/report-test/REPORT.md", "runs/vlm-pilot/report-test/cells.csv"):
