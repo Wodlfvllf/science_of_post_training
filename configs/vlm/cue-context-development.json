@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "kind": "cue_context_development_v1",
+  "plan_id": "44f4c5dbae51af518f044c735dc96ae8f6b043cb3c7ca70bd0512fb3cf9fc050",
+  "dataset_sha256": "cb93e6e3e4034750252ebce2d1d995e59c537f8a6bf6de1fc963b69b0e2e3de5",
+  "split": "engineering",
+  "family_offset": 8,
+  "family_count": 8,
+  "family_indices": [8, 9, 10, 11, 12, 13, 14, 15],
+  "selection": "arbitrary_fixed_indices_before_new_outputs_no_outcome_filters",
+  "prior_use": "prior_engineering_used_not_confirmation",
+  "factors": {"edges": [1, -1], "directions": [1, -1], "palettes": [0, 1]},
+  "cues": ["triangle", "circle", "square"],
+  "contexts": ["lookup_only", "true_relation", "competing_anchor"],
+  "vocabularies": {
+    "COLORS": ["red", "blue", "green", "yellow", "purple", "orange"],
+    "SHAPES": ["triangle", "circle", "square"]
+  },
+  "final_instruction": "Now inspect the {cue} only. What color is its chip? Reply with one color name.",
+  "relation_prefix": "Starting at the {anchor}, follow one arrow {traversal}. ",
+  "competing_anchor_rule": "(original_anchor+1)%3_independent_of_direction_and_gold",
+  "cue_rule": "all_fixed_SHAPES_all_node_intervention_not_autonomous_rescue",
+  "task_frames": {
+    "1": "Starting at the {anchor}, follow one arrow {traversal}. What is the destination {answer}? Reply with one {answer} name.",
+    "2": "From the {anchor}, move one arrow {traversal}. Name the {answer} at the destination. Reply with one {answer} name."
+  },
+  "task_answers": ["shape", "color"],
+  "checkpoints": ["8b-mpo", "8b-gspo"],
+  "checkpoint_pins": {
+    "8b-mpo": {"model_id": "OpenGVLab/InternVL3_5-8B-MPO", "revision": "bb33f08275aa566f3442c1f5002512ffb66d7952"},
+    "8b-gspo": {"model_id": "OpenGVLab/InternVL3_5-8B", "revision": "9bb6a56ad9cc69db95e2d4eeb15a52bbcac4ef79"}
+  },
+  "inference": "original_unchanged_common_answer_prefix",
+  "generation": {"max_new_tokens": 32, "do_sample": false, "use_cache": false, "eos": "native_unchanged", "parser": "helper.strict_token_answer"},
+  "stages_per_family": {"cue_context": 72, "task": 32, "total": 104},
+  "stages_per_model": 832,
+  "generations_both_models": 1664,
+  "primary": "mean_family_half_true_plus_competing_cue_compliance_minus_lookup",
+  "scope": "prospective_development_not_confirmation_no_mechanism_claim",
+  "prohibited": ["downloads", "resume", "overwrite", "retries", "outcome_filters", "training", "probes", "pilot_validation", "confirmation"]
+}
